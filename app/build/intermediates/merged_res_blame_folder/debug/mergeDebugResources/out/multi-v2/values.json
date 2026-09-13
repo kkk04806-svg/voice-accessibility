@@ -1,0 +1,45 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.vanraj.assistant.app-mergeDebugResources-2:/values/values.xml",
+            "map": [
+                {
+                    "source": "/data/data/com.termux/files/home/assistant/accessibility/app/src/main/res/values/strings.xml",
+                    "from": {
+                        "startLines": "2,1",
+                        "startColumns": "4,4",
+                        "startOffsets": "69,16",
+                        "endColumns": "121,52",
+                        "endOffsets": "186,64"
+                    },
+                    "to": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,177",
+                        "endColumns": "121,52",
+                        "endOffsets": "172,225"
+                    }
+                },
+                {
+                    "source": "/data/data/com.termux/files/home/assistant/accessibility/app/src/main/res/values/styles.xml",
+                    "from": {
+                        "startLines": "1",
+                        "startColumns": "4",
+                        "startOffsets": "16",
+                        "endLines": "4",
+                        "endColumns": "12",
+                        "endOffsets": "216"
+                    },
+                    "to": {
+                        "startLines": "4",
+                        "startColumns": "4",
+                        "startOffsets": "230",
+                        "endLines": "7",
+                        "endColumns": "12",
+                        "endOffsets": "430"
+                    }
+                }
+            ]
+        }
+    ]
+}

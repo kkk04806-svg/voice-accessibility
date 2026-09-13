@@ -1,0 +1,67 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:1:1-33:12
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:1:1-33:12
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:1:1-33:12
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:1:1-33:12
+	package
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	android:versionName
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	android:versionCode
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	xmlns:android
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:1:11-69
+application
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:3:5-31:19
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:3:5-31:19
+	android:extractNativeLibs
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	android:label
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:5:9-40
+	android:theme
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:4:9-40
+activity#com.vanraj.assistant.MainActivity
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:7:9-14:20
+	android:exported
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:9:13-36
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:8:13-41
+intent-filter#action:name:android.intent.action.MAIN+category:name:android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:10:13-13:29
+action#android.intent.action.MAIN
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:11:17-69
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:11:25-66
+category#android.intent.category.LAUNCHER
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:12:17-77
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:12:27-74
+service#com.vanraj.assistant.VoiceAccessibilityService
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:16:9-29:19
+	android:exported
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:19:13-37
+	android:permission
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:18:13-79
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:17:13-54
+intent-filter#action:name:android.accessibilityservice.AccessibilityService
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:21:13-23:29
+action#android.accessibilityservice.AccessibilityService
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:22:17-92
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:22:25-89
+meta-data#android.accessibilityservice
+ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:25:13-27:72
+	android:resource
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:27:17-69
+	android:name
+		ADDED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml:26:17-60
+uses-sdk
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	android:targetSdkVersion
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml
+	android:minSdkVersion
+		INJECTED from /data/data/com.termux/files/home/assistant/accessibility/app/src/main/AndroidManifest.xml

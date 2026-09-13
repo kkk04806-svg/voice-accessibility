@@ -1,0 +1,6 @@
+[
+    {
+        "merged": "com.vanraj.assistant.app-debug-4:/xml_accessibility_service_config.xml.flat",
+        "source": "com.vanraj.assistant.app-main-6:/xml/accessibility_service_config.xml"
+    }
+]

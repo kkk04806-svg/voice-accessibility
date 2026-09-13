@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Voice Assistant</string>
+    <string name="accessibility_description">Allows Voice Assistant to find and type into the active text field.</string>
+</resources>
