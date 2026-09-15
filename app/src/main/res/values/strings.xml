@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Voice Assistant</string>
-    <string name="accessibility_description">Allows Voice Assistant to find and type into the active text field.</string>
+    <string name="accessibility_service_label">Voice Assistant</string>
+    <string name="accessibility_description">Voice Assistant can type text into the active text field when you give it a command.</string>
 </resources>
