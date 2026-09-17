@@ -33,6 +33,14 @@
 
         </service>
 
+        <receiver
+            android:name=".CommandReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.vanraj.assistant.TYPE_TEXT" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

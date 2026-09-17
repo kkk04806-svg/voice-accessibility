@@ -1,9 +1,10 @@
 package com.vanraj.assistant;
 
 import android.accessibilityservice.AccessibilityService;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityEvent;
 
 public class VoiceAccessibilityService extends AccessibilityService {
 
@@ -18,9 +19,16 @@ public class VoiceAccessibilityService extends AccessibilityService {
         Log.d(TAG, "Accessibility Service Connected");
     }
 
+    public static VoiceAccessibilityService getInstance() {
+        return instance;
+    }
+
+    public static boolean isRunning() {
+        return instance != null;
+    }
+
     @Override
-    public void onAccessibilityEvent(
-            android.view.accessibility.AccessibilityEvent event) {
+    public void onAccessibilityEvent(AccessibilityEvent event) {
         // UI events are received here.
     }
 
@@ -35,10 +43,6 @@ public class VoiceAccessibilityService extends AccessibilityService {
         super.onDestroy();
     }
 
-    public static boolean isRunning() {
-        return instance != null;
-    }
-
     public boolean typeText(String text) {
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
@@ -48,11 +52,21 @@ public class VoiceAccessibilityService extends AccessibilityService {
             return false;
         }
 
-        AccessibilityNodeInfo input =
-                findFocusedInput(root);
+        AccessibilityNodeInfo input = root.findFocus(
+                AccessibilityNodeInfo.FOCUS_INPUT
+        );
+
+        if (input == null || !input.isEditable()) {
+            if (input != null) {
+                input.recycle();
+            }
+
+            input = findEditable(root);
+        }
 
         if (input == null) {
-            Log.e(TAG, "No focused input field found");
+            Log.e(TAG, "No editable input field found");
+            root.recycle();
             return false;
         }
 
@@ -67,21 +81,22 @@ public class VoiceAccessibilityService extends AccessibilityService {
                 args
         );
 
-        input.recycle();
-
         Log.d(TAG, "Typing result: " + result);
+
+        input.recycle();
+        root.recycle();
 
         return result;
     }
 
-    private AccessibilityNodeInfo findFocusedInput(
+    private AccessibilityNodeInfo findEditable(
             AccessibilityNodeInfo node) {
 
         if (node == null) {
             return null;
         }
 
-        if (node.isFocused() && node.isEditable()) {
+        if (node.isEditable() && node.isFocused()) {
             return AccessibilityNodeInfo.obtain(node);
         }
 
@@ -89,8 +104,7 @@ public class VoiceAccessibilityService extends AccessibilityService {
 
             AccessibilityNodeInfo child = node.getChild(i);
 
-            AccessibilityNodeInfo result =
-                    findFocusedInput(child);
+            AccessibilityNodeInfo result = findEditable(child);
 
             if (child != null) {
                 child.recycle();
