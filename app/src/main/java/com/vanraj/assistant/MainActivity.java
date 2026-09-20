@@ -24,16 +24,19 @@ public class MainActivity extends Activity {
 
         TextView info = new TextView(this);
         info.setText(
-            "\nAccessibility Service ko ON karo.\n" +
-            "Isse assistant active app ke text field mein type kar sakega."
+                "\nAccessibility Service ko ON karo.\n\n" +
+                "Isse assistant active app ke text field mein text type kar sakega.\n\n" +
+                "Service ON karne ke baad WhatsApp ya kisi bhi text box mein cursor rakho."
         );
         info.setTextSize(17);
 
         Button settingsButton = new Button(this);
-        settingsButton.setText("Open Accessibility Settings");
+        settingsButton.setText("OPEN ACCESSIBILITY SETTINGS");
 
         settingsButton.setOnClickListener(v -> {
-            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            Intent intent = new Intent(
+                    Settings.ACTION_ACCESSIBILITY_SETTINGS
+            );
             startActivity(intent);
         });
 
