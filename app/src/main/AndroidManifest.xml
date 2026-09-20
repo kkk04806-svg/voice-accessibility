@@ -11,10 +11,12 @@
         <activity
             android:name=".MainActivity"
             android:exported="true">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
         <service
@@ -36,9 +38,11 @@
         <receiver
             android:name=".CommandReceiver"
             android:exported="true">
+
             <intent-filter>
                 <action android:name="com.vanraj.assistant.TYPE_TEXT" />
             </intent-filter>
+
         </receiver>
 
     </application>
