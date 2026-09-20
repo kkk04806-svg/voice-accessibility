@@ -7,14 +7,27 @@ import android.util.Log;
 
 public class CommandReceiver extends BroadcastReceiver {
 
-    @Override
-    public void onReceive(Context context, Intent intent) {
+    public static final String TYPE_TEXT =
+            "com.vanraj.assistant.TYPE_TEXT";
 
-        if (!"com.vanraj.assistant.TYPE_TEXT".equals(intent.getAction())) {
+    @Override
+    public void onReceive(
+            Context context,
+            Intent intent) {
+
+        if (intent == null) {
             return;
         }
 
-        String text = intent.getStringExtra("text");
+        String action = intent.getAction();
+
+        if (!TYPE_TEXT.equals(action)) {
+            return;
+        }
+
+        String text =
+                intent.getStringExtra("text");
+
         if (text == null) {
             text = "";
         }
@@ -22,8 +35,22 @@ public class CommandReceiver extends BroadcastReceiver {
         VoiceAccessibilityService service =
                 VoiceAccessibilityService.getInstance();
 
-        boolean ok = service != null && service.typeText(text);
+        if (service == null) {
 
-        Log.d("VoiceAssistant", "Broadcast typing: " + ok);
+            Log.e(
+                    "VoiceAssistant",
+                    "Accessibility Service OFF"
+            );
+
+            return;
+        }
+
+        boolean result =
+                service.typeText(text);
+
+        Log.d(
+                "VoiceAssistant",
+                "Typing result = " + result
+        );
     }
 }
