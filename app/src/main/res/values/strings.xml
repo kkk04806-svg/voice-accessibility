@@ -1,5 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="app_name">Voice Assistant</string>
+
     <string name="accessibility_service_label">Voice Assistant</string>
-    <string name="accessibility_description">Voice Assistant can type text into the active text field when you give it a command.</string>
+
+    <string name="accessibility_description">
+        Voice Assistant can read the active screen and type text into editable fields when you give a command.
+    </string>
+
 </resources>
