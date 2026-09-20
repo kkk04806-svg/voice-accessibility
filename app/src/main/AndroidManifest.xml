@@ -1,12 +1,72 @@
-<queries>
+<?xml version="1.0" encoding="utf-8"?>
 
-    <intent>
-        <action android:name="android.speech.RecognitionService" />
-    </intent>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <intent>
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-    </intent>
+    <!-- Microphone -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-</queries>
+    <!-- Android 11+ package visibility:
+         Speech Recognition Service -->
+    <queries>
+
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+
+        <!-- Installed launcher apps -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+
+    </queries>
+
+    <application
+        android:theme="@style/AppTheme"
+        android:label="@string/app_name"
+        android:allowBackup="false"
+        android:supportsRtl="true">
+
+        <!-- Main App -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <!-- Accessibility Service -->
+        <service
+            android:name=".VoiceAccessibilityService"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+
+        </service>
+
+        <!-- Text typing receiver -->
+        <receiver
+            android:name=".CommandReceiver"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="com.vanraj.assistant.TYPE_TEXT" />
+            </intent-filter>
+
+        </receiver>
+
+    </application>
+
+</manifest>
