@@ -1,7 +1,10 @@
+package com.vanraj.assistant;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -13,6 +16,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -31,6 +35,7 @@ public class MainActivity extends Activity {
 
     private boolean shouldListen = true;
     private boolean processing = false;
+    private boolean voiceInitialized = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +54,34 @@ public class MainActivity extends Activity {
 
         } else {
             initializeVoice();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] grantResults) {
+
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                grantResults
+        );
+
+        if (requestCode == MIC_PERMISSION) {
+
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                initializeVoice();
+
+            } else {
+
+                status.setText(
+                        "❌ Microphone permission required."
+                );
+            }
         }
     }
 
@@ -73,14 +106,26 @@ public class MainActivity extends Activity {
         accessibilityButton.setText("♿ ENABLE ACCESSIBILITY");
 
         listenButton.setOnClickListener(v -> {
+
             shouldListen = true;
+            processing = false;
             startListening();
         });
 
         accessibilityButton.setOnClickListener(v -> {
-            startActivity(
-                    new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            );
+
+            try {
+
+                startActivity(
+                        new Intent(
+                                Settings.ACTION_ACCESSIBILITY_SETTINGS
+                        )
+                );
+
+            } catch (Exception e) {
+
+                speak("Accessibility settings open nahi hui bhai.");
+            }
         });
 
         layout.addView(title);
@@ -112,9 +157,12 @@ public class MainActivity extends Activity {
 
     private void speak(String text) {
 
-        status.setText("🤖 " + text);
+        if (status != null) {
+            status.setText("🤖 " + text);
+        }
 
         if (tts != null) {
+
             tts.speak(
                     text,
                     TextToSpeech.QUEUE_FLUSH,
@@ -126,20 +174,26 @@ public class MainActivity extends Activity {
 
     private void initializeVoice() {
 
+        if (voiceInitialized) {
+            return;
+        }
+
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
 
             status.setText(
-                    "❌ Phone mein speech recognition available nahi hai."
+                    "❌ Speech recognition available nahi hai."
             );
 
             return;
         }
 
-        recognizer = SpeechRecognizer.createSpeechRecognizer(this);
+        recognizer =
+                SpeechRecognizer.createSpeechRecognizer(this);
 
-        speechIntent = new Intent(
-                RecognizerIntent.ACTION_RECOGNIZE_SPEECH
-        );
+        speechIntent =
+                new Intent(
+                        RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+                );
 
         speechIntent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -170,7 +224,8 @@ public class MainActivity extends Activity {
                 new RecognitionListener() {
 
                     @Override
-                    public void onReadyForSpeech(Bundle params) {
+                    public void onReadyForSpeech(
+                            Bundle params) {
 
                         status.setText(
                                 "🎤 Sun raha hoon... Bolo bhai!"
@@ -190,11 +245,13 @@ public class MainActivity extends Activity {
                     }
 
                     @Override
-                    public void onRmsChanged(float rmsdB) {
+                    public void onRmsChanged(
+                            float rmsdB) {
                     }
 
                     @Override
-                    public void onBufferReceived(byte[] buffer) {
+                    public void onBufferReceived(
+                            byte[] buffer) {
                     }
 
                     @Override
@@ -218,13 +275,14 @@ public class MainActivity extends Activity {
 
                             handler.postDelayed(
                                     () -> startListening(),
-                                    800
+                                    1000
                             );
                         }
                     }
 
                     @Override
-                    public void onResults(Bundle results) {
+                    public void onResults(
+                            Bundle results) {
 
                         processing = false;
 
@@ -236,7 +294,8 @@ public class MainActivity extends Activity {
                         if (matches != null &&
                                 !matches.isEmpty()) {
 
-                            String command = matches.get(0);
+                            String command =
+                                    matches.get(0);
 
                             status.setText(
                                     "👤 " + command
@@ -253,13 +312,14 @@ public class MainActivity extends Activity {
 
                             handler.postDelayed(
                                     () -> startListening(),
-                                    1200
+                                    1500
                             );
                         }
                     }
 
                     @Override
-                    public void onPartialResults(Bundle partialResults) {
+                    public void onPartialResults(
+                            Bundle partialResults) {
                     }
 
                     @Override
@@ -270,11 +330,15 @@ public class MainActivity extends Activity {
                 }
         );
 
-        speak("Hello bhai. Main ready hoon.");
+        voiceInitialized = true;
+
+        speak(
+                "Hello bhai. Main ready hoon."
+        );
 
         handler.postDelayed(
                 () -> startListening(),
-                1800
+                2000
         );
     }
 
@@ -303,12 +367,19 @@ public class MainActivity extends Activity {
             status.setText(
                     "❌ Voice error: " + e.getMessage()
             );
+
+            handler.postDelayed(
+                    () -> startListening(),
+                    1500
+            );
         }
     }
 
     private void processCommand(String original) {
 
-        if (original == null) {
+        if (original == null ||
+                original.trim().isEmpty()) {
+
             return;
         }
 
@@ -319,9 +390,11 @@ public class MainActivity extends Activity {
         if (command.equals("stop") ||
                 command.contains("stop assistant") ||
                 command.contains("assistant stop") ||
-                command.contains("band ho ja")) {
+                command.contains("band ho ja") ||
+                command.contains("ruk ja")) {
 
             shouldListen = false;
+            processing = false;
 
             if (recognizer != null) {
                 recognizer.cancel();
@@ -335,71 +408,147 @@ public class MainActivity extends Activity {
         }
 
         // HOME
-        if (command.contains("home screen") ||
-                command.equals("home")) {
+        if (command.equals("home") ||
+                command.contains("home screen") ||
+                command.contains("ghar screen")) {
 
             openHome();
-            speak("Home screen khol raha hoon bhai.");
+
+            speak(
+                    "Home screen khol raha hoon bhai."
+            );
+
             return;
         }
 
         // BATTERY
-        if (command.contains("battery")) {
+        if (command.contains("battery") ||
+                command.contains("bateri")) {
 
-            speak(
-                    "Battery command abhi system integration mein hai."
-            );
+            Intent batteryIntent =
+                    registerReceiver(
+                            null,
+                            new android.content.IntentFilter(
+                                    Intent.ACTION_BATTERY_CHANGED
+                            )
+                    );
+
+            if (batteryIntent != null) {
+
+                int level =
+                        batteryIntent.getIntExtra(
+                                "level",
+                                -1
+                        );
+
+                int scale =
+                        batteryIntent.getIntExtra(
+                                "scale",
+                                -1
+                        );
+
+                if (level >= 0 && scale > 0) {
+
+                    int percent =
+                            (level * 100) / scale;
+
+                    speak(
+                            "Bhai battery " +
+                            percent +
+                            " percent hai."
+                    );
+
+                } else {
+
+                    speak(
+                            "Battery level nahi mil paya bhai."
+                    );
+                }
+
+            } else {
+
+                speak(
+                        "Battery information nahi mili bhai."
+                );
+            }
 
             return;
         }
 
         // VIBRATE
         if (command.contains("vibrate") ||
-                command.contains("vibration")) {
+                command.contains("vibration") ||
+                command.contains("vibrate karo")) {
 
-            Intent intent = new Intent(
-                    "com.vanraj.assistant.VIBRATE"
-            );
+            Intent intent =
+                    new Intent(
+                            "com.vanraj.assistant.VIBRATE"
+                    );
 
             sendBroadcast(intent);
 
-            speak("Phone vibrate kar diya bhai.");
+            speak(
+                    "Phone vibrate kar diya bhai."
+            );
+
             return;
         }
 
-        // TORCH
+        // TORCH ON
         if (command.contains("torch on") ||
-                command.contains("flashlight on")) {
+                command.contains("flashlight on") ||
+                command.contains("flash on") ||
+                command.contains("torch chalu")) {
 
-            Intent intent = new Intent(
-                    "com.vanraj.assistant.TORCH"
+            Intent intent =
+                    new Intent(
+                            "com.vanraj.assistant.TORCH"
+                    );
+
+            intent.putExtra(
+                    "state",
+                    true
             );
 
-            intent.putExtra("state", true);
             sendBroadcast(intent);
 
-            speak("Torch on kar diya bhai.");
+            speak(
+                    "Torch on kar diya bhai."
+            );
+
             return;
         }
 
+        // TORCH OFF
         if (command.contains("torch off") ||
-                command.contains("flashlight off")) {
+                command.contains("flashlight off") ||
+                command.contains("flash off") ||
+                command.contains("torch band")) {
 
-            Intent intent = new Intent(
-                    "com.vanraj.assistant.TORCH"
+            Intent intent =
+                    new Intent(
+                            "com.vanraj.assistant.TORCH"
+                    );
+
+            intent.putExtra(
+                    "state",
+                    false
             );
 
-            intent.putExtra("state", false);
             sendBroadcast(intent);
 
-            speak("Torch off kar diya bhai.");
+            speak(
+                    "Torch off kar diya bhai."
+            );
+
             return;
         }
 
-        // CHROME SEARCH
+        // CHROME
         if (command.contains("chrome")) {
 
-            String query = extractSearch(command);
+            String query =
+                    extractSearch(command);
 
             if (!query.isEmpty()) {
 
@@ -408,7 +557,7 @@ public class MainActivity extends Activity {
                 speak(
                         "Chrome mein " +
                         query +
-                        " search kar raha hoon."
+                        " search kar raha hoon bhai."
                 );
 
             } else {
@@ -424,16 +573,18 @@ public class MainActivity extends Activity {
 
         // MAPS
         if (command.contains("maps") ||
-                command.contains("map")) {
+                command.equals("map") ||
+                command.contains(" map ")) {
 
-            String query = extractSearch(command);
+            String query =
+                    extractSearch(command);
 
             if (!query.isEmpty()) {
 
                 openMapsSearch(query);
 
                 speak(
-                        "Maps mein location search kar raha hoon."
+                        "Maps mein location search kar raha hoon bhai."
                 );
 
             } else {
@@ -455,11 +606,15 @@ public class MainActivity extends Activity {
                     "WhatsApp"
             );
 
-            String text = extractText(command);
+            String text =
+                    extractText(command);
 
             if (!text.isEmpty()) {
 
-                typeAfterDelay(text, 1800);
+                typeAfterDelay(
+                        text,
+                        2000
+                );
             }
 
             return;
@@ -473,11 +628,15 @@ public class MainActivity extends Activity {
                     "Telegram"
             );
 
-            String text = extractText(command);
+            String text =
+                    extractText(command);
 
             if (!text.isEmpty()) {
 
-                typeAfterDelay(text, 1800);
+                typeAfterDelay(
+                        text,
+                        2000
+                );
             }
 
             return;
@@ -486,7 +645,8 @@ public class MainActivity extends Activity {
         // YOUTUBE
         if (command.contains("youtube")) {
 
-            String query = extractSearch(command);
+            String query =
+                    extractSearch(command);
 
             if (!query.isEmpty()) {
 
@@ -507,7 +667,8 @@ public class MainActivity extends Activity {
 
         // CALCULATOR
         if (command.contains("calculator") ||
-                command.contains("calculate")) {
+                command.contains("calculate") ||
+                command.contains("calc")) {
 
             openApp(
                     "com.vivo.calculator",
@@ -518,7 +679,8 @@ public class MainActivity extends Activity {
         }
 
         // GMAIL
-        if (command.contains("gmail")) {
+        if (command.contains("gmail") ||
+                command.contains("email")) {
 
             openApp(
                     "com.google.android.gm",
@@ -564,9 +726,12 @@ public class MainActivity extends Activity {
         // GENERIC TYPE
         if (command.startsWith("type ") ||
                 command.startsWith("write ") ||
+                command.startsWith("likho ") ||
+                command.startsWith("likh ") ||
                 command.contains("type this")) {
 
-            String text = extractText(command);
+            String text =
+                    extractText(command);
 
             if (!text.isEmpty()) {
 
@@ -585,6 +750,7 @@ public class MainActivity extends Activity {
         // HELLO
         if (command.equals("hello") ||
                 command.equals("hi") ||
+                command.equals("hey") ||
                 command.contains("namaste")) {
 
             speak(
@@ -594,6 +760,7 @@ public class MainActivity extends Activity {
             return;
         }
 
+        // UNKNOWN
         speak(
                 "Bhai ye command abhi samajh nahi aayi."
         );
@@ -636,7 +803,7 @@ public class MainActivity extends Activity {
 
             speak(
                     name +
-                    " open nahi ho paya."
+                    " open nahi ho paya bhai."
             );
         }
     }
@@ -645,9 +812,10 @@ public class MainActivity extends Activity {
 
         try {
 
-            Intent intent = new Intent(
-                    Intent.ACTION_MAIN
-            );
+            Intent intent =
+                    new Intent(
+                            Intent.ACTION_MAIN
+                    );
 
             intent.addCategory(
                     Intent.CATEGORY_HOME
@@ -659,184 +827,6 @@ public class MainActivity extends Activity {
 
             startActivity(intent);
 
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void openGoogleSearch(
-            String query) {
-
-        try {
-
-            String url =
-                    "https://www.google.com/search?q="
-                    + java.net.URLEncoder.encode(
-                            query,
-                            "UTF-8"
-                    );
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            android.net.Uri.parse(url)
-                    );
-
-            startActivity(intent);
-
         } catch (Exception e) {
 
-            speak("Search open nahi ho payi bhai.");
-        }
-    }
-
-    private void openMapsSearch(
-            String query) {
-
-        try {
-
-            String url =
-                    "https://www.google.com/maps/search/?api=1&query="
-                    + java.net.URLEncoder.encode(
-                            query,
-                            "UTF-8"
-                    );
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            android.net.Uri.parse(url)
-                    );
-
-            startActivity(intent);
-
-        } catch (Exception e) {
-
-            speak("Maps search nahi ho payi bhai.");
-        }
-    }
-
-    private String extractSearch(
-            String command) {
-
-        String[] markers = {
-                "search for",
-                "search",
-                "google",
-                "find",
-                "mein search",
-                "me search"
-        };
-
-        for (String marker : markers) {
-
-            int index =
-                    command.indexOf(marker);
-
-            if (index >= 0) {
-
-                String result =
-                        command.substring(
-                                index + marker.length()
-                        ).trim();
-
-                if (!result.isEmpty()) {
-                    return result;
-                }
-            }
-        }
-
-        return "";
-    }
-
-    private String extractText(
-            String command) {
-
-        String[] markers = {
-                "message",
-                "msg",
-                "text",
-                "type",
-                "write",
-                "likho",
-                "likh",
-                "mein likh",
-                "me likh"
-        };
-
-        for (String marker : markers) {
-
-            int index =
-                    command.indexOf(marker);
-
-            if (index >= 0) {
-
-                String result =
-                        command.substring(
-                                index + marker.length()
-                        ).trim();
-
-                String[] remove = {
-                        "send",
-                        "kar",
-                        "karo",
-                        "please",
-                        "hai"
-                };
-
-                for (String word : remove) {
-
-                    if (result.startsWith(word + " ")) {
-
-                        result =
-                                result.substring(
-                                        word.length()
-                                ).trim();
-                    }
-                }
-
-                if (!result.isEmpty()) {
-                    return result;
-                }
-            }
-        }
-
-        return "";
-    }
-
-    private void typeAfterDelay(
-            String text,
-            long delay) {
-
-        handler.postDelayed(
-                () -> typeText(text),
-                delay
-        );
-    }
-
-    private void typeText(
-            String text) {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service == null) {
-
-            speak(
-                    "Bhai Accessibility Service ON nahi hai."
-            );
-
-            return;
-        }
-
-        boolean result =
-                service.typeText(text);
-
-        if (result) {
-
-            speak(
-                    "Text type kar diya bhai."
-            );
-
-        } else {
-
-          
+   
