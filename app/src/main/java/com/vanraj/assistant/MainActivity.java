@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -124,7 +123,9 @@ public class MainActivity extends Activity {
 
             } catch (Exception e) {
 
-                speak("Accessibility settings open nahi hui bhai.");
+                speak(
+                        "Accessibility settings open nahi hui bhai."
+                );
             }
         });
 
@@ -245,8 +246,7 @@ public class MainActivity extends Activity {
                     }
 
                     @Override
-                    public void onRmsChanged(
-                            float rmsdB) {
+                    public void onRmsChanged(float rmsdB) {
                     }
 
                     @Override
@@ -485,6 +485,8 @@ public class MainActivity extends Activity {
                             "com.vanraj.assistant.VIBRATE"
                     );
 
+            intent.setPackage(getPackageName());
+
             sendBroadcast(intent);
 
             speak(
@@ -504,6 +506,8 @@ public class MainActivity extends Activity {
                     new Intent(
                             "com.vanraj.assistant.TORCH"
                     );
+
+            intent.setPackage(getPackageName());
 
             intent.putExtra(
                     "state",
@@ -529,6 +533,8 @@ public class MainActivity extends Activity {
                     new Intent(
                             "com.vanraj.assistant.TORCH"
                     );
+
+            intent.setPackage(getPackageName());
 
             intent.putExtra(
                     "state",
@@ -829,4 +835,267 @@ public class MainActivity extends Activity {
 
         } catch (Exception e) {
 
-   
+            speak(
+                    "Home screen open nahi hui bhai."
+            );
+        }
+    }
+
+    private String extractSearch(String command) {
+
+        String query = command;
+
+        String[] removeWords = {
+                "chrome mein search karo",
+                "chrome me search karo",
+                "chrome mein search",
+                "chrome me search",
+                "chrome search karo",
+                "chrome search",
+                "search karo",
+                "search kar",
+                "search",
+                "maps mein search karo",
+                "maps me search karo",
+                "maps mein search",
+                "maps me search",
+                "maps search karo",
+                "map mein search karo",
+                "map me search karo",
+                "map search karo",
+                "youtube mein search karo",
+                "youtube me search karo",
+                "youtube search karo",
+                "youtube search",
+                "youtube par search karo",
+                "youtube pe search karo"
+        };
+
+        for (String word : removeWords) {
+
+            query = query.replace(
+                    word,
+                    ""
+            );
+        }
+
+        query = query
+                .replace("chrome", "")
+                .replace("maps", "")
+                .replace(" map ", " ")
+                .replace("youtube", "")
+                .trim();
+
+        return query;
+    }
+
+    private String extractText(String command) {
+
+        String text = command;
+
+        String[] prefixes = {
+                "type this",
+                "type",
+                "write this",
+                "write",
+                "likho",
+                "likh",
+                "message",
+                "message karo",
+                "message bhejo",
+                "text",
+                "text likho",
+                "msg"
+        };
+
+        for (String prefix : prefixes) {
+
+            if (text.startsWith(prefix + " ")) {
+
+                text = text.substring(
+                        prefix.length()
+                ).trim();
+
+                break;
+            }
+        }
+
+        // WhatsApp / Telegram ke common phrases
+        String[] extraPrefixes = {
+                "whatsapp par ",
+                "whatsapp pe ",
+                "whatsapp mein ",
+                "whatsapp me ",
+                "telegram par ",
+                "telegram pe ",
+                "telegram mein ",
+                "telegram me "
+        };
+
+        for (String prefix : extraPrefixes) {
+
+            if (text.startsWith(prefix)) {
+
+                text = text.substring(
+                        prefix.length()
+                ).trim();
+
+                break;
+            }
+        }
+
+        return text.trim();
+    }
+
+    private void typeAfterDelay(
+            String text,
+            long delayMillis) {
+
+        handler.postDelayed(
+                () -> typeText(text),
+                delayMillis
+        );
+    }
+
+    private void typeText(String text) {
+
+        if (text == null ||
+                text.trim().isEmpty()) {
+
+            speak(
+                    "Bhai type karne ke liye text nahi mila."
+            );
+
+            return;
+        }
+
+        VoiceAccessibilityService service =
+                VoiceAccessibilityService.getInstance();
+
+        if (service == null) {
+
+            speak(
+                    "Bhai Accessibility Service ON nahi hai."
+            );
+
+            return;
+        }
+
+        boolean result =
+                service.typeText(text);
+
+        if (result) {
+
+            speak(
+                    "Text type kar diya bhai."
+            );
+
+        } else {
+
+            speak(
+                    "Bhai active text box nahi mila."
+            );
+        }
+    }
+
+    private void openGoogleSearch(String query) {
+
+        try {
+
+            String encoded =
+                    URLEncoder.encode(
+                            query,
+                            "UTF-8"
+                    );
+
+            Intent intent =
+                    new Intent(
+                            Intent.ACTION_VIEW,
+                            android.net.Uri.parse(
+                                    "https://www.google.com/search?q="
+                                            + encoded
+                            )
+                    );
+
+            intent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            startActivity(intent);
+
+        } catch (Exception e) {
+
+            speak(
+                    "Google search open nahi ho paya bhai."
+            );
+        }
+    }
+
+    private void openMapsSearch(String query) {
+
+        try {
+
+            String encoded =
+                    URLEncoder.encode(
+                            query,
+                            "UTF-8"
+                    );
+
+            Intent intent =
+                    new Intent(
+                            Intent.ACTION_VIEW,
+                            android.net.Uri.parse(
+                                    "https://www.google.com/maps/search/?api=1&query="
+                                            + encoded
+                            )
+                    );
+
+            intent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK
+            );
+
+            startActivity(intent);
+
+        } catch (Exception e) {
+
+            speak(
+                    "Maps search open nahi ho paya bhai."
+            );
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+
+        shouldListen = false;
+        processing = false;
+
+        handler.removeCallbacksAndMessages(null);
+
+        if (recognizer != null) {
+
+            try {
+                recognizer.cancel();
+                recognizer.destroy();
+            } catch (Exception ignored) {
+            }
+
+            recognizer = null;
+        }
+
+        if (tts != null) {
+
+            try {
+                tts.stop();
+                tts.shutdown();
+            } catch (Exception ignored) {
+            }
+
+            tts = null;
+        }
+
+        voiceInitialized = false;
+
+        super.onDestroy();
+    }
+}
