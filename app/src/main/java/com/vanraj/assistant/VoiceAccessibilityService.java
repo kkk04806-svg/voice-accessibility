@@ -10,7 +10,7 @@ public class VoiceAccessibilityService
         extends AccessibilityService {
 
     private static final String TAG =
-            "VanrajAI";
+            "VoiceAssistant";
 
     private static VoiceAccessibilityService instance;
 
@@ -28,21 +28,29 @@ public class VoiceAccessibilityService
     }
 
     public static VoiceAccessibilityService getInstance() {
+
         return instance;
     }
 
     public static boolean isRunning() {
+
         return instance != null;
     }
 
     @Override
     public void onAccessibilityEvent(
             AccessibilityEvent event) {
+
+        // Screen events can be handled here.
     }
 
     @Override
     public void onInterrupt() {
-        Log.d(TAG, "Accessibility interrupted");
+
+        Log.d(
+                TAG,
+                "Accessibility interrupted"
+        );
     }
 
     @Override
@@ -58,7 +66,8 @@ public class VoiceAccessibilityService
         super.onDestroy();
     }
 
-    public boolean typeText(String text) {
+    public boolean typeText(
+            String text) {
 
         if (text == null) {
             text = "";
@@ -68,6 +77,12 @@ public class VoiceAccessibilityService
                 getRootInActiveWindow();
 
         if (root == null) {
+
+            Log.e(
+                    TAG,
+                    "Active window nahi mila"
+            );
+
             return false;
         }
 
@@ -91,13 +106,18 @@ public class VoiceAccessibilityService
 
             root.recycle();
 
+            Log.e(
+                    TAG,
+                    "Editable field nahi mila"
+            );
+
             return false;
         }
 
-        Bundle args =
+        Bundle arguments =
                 new Bundle();
 
-        args.putCharSequence(
+        arguments.putCharSequence(
                 AccessibilityNodeInfo
                         .ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
                 text
@@ -106,16 +126,22 @@ public class VoiceAccessibilityService
         boolean result =
                 input.performAction(
                         AccessibilityNodeInfo.ACTION_SET_TEXT,
-                        args
+                        arguments
                 );
 
         input.recycle();
         root.recycle();
 
+        Log.d(
+                TAG,
+                "Type result = " + result
+        );
+
         return result;
     }
 
-    public boolean clickText(String text) {
+    public boolean clickText(
+            String text) {
 
         if (text == null ||
                 text.trim().isEmpty()) {
@@ -159,18 +185,18 @@ public class VoiceAccessibilityService
                 text == null
                         ? ""
                         : text.toString()
-                        .toLowerCase();
+                                .toLowerCase();
 
         String nodeDescription =
                 description == null
                         ? ""
                         : description.toString()
-                        .toLowerCase();
+                                .toLowerCase();
 
         if (node.isClickable() &&
                 (
-                    nodeText.contains(wanted) ||
-                    nodeDescription.contains(wanted)
+                        nodeText.contains(wanted) ||
+                        nodeDescription.contains(wanted)
                 )) {
 
             return node.performAction(
@@ -212,10 +238,12 @@ public class VoiceAccessibilityService
             return null;
         }
 
-        if (node.isEditable()) {
+        if (node.isEditable() &&
+                node.isFocused()) {
 
-            return AccessibilityNodeInfo
-                    .obtain(node);
+            return AccessibilityNodeInfo.obtain(
+                    node
+            );
         }
 
         for (int i = 0;
