@@ -1,8 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission
+        android:name="android.permission.RECORD_AUDIO" />
+
+    <queries>
+
+        <intent>
+            <action
+                android:name="android.speech.RecognitionService" />
+        </intent>
+
+        <intent>
+            <action
+                android:name="android.intent.action.MAIN" />
+
+            <category
+                android:name="android.intent.category.LAUNCHER" />
+        </intent>
+
+    </queries>
 
     <application
         android:theme="@style/AppTheme"
@@ -15,8 +34,13 @@
             android:exported="true">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+
+                <action
+                    android:name="android.intent.action.MAIN" />
+
+                <category
+                    android:name="android.intent.category.LAUNCHER" />
+
             </intent-filter>
 
         </activity>
@@ -28,7 +52,10 @@
             android:exported="true">
 
             <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
+
+                <action
+                    android:name="android.accessibilityservice.AccessibilityService" />
+
             </intent-filter>
 
             <meta-data
@@ -42,7 +69,10 @@
             android:exported="true">
 
             <intent-filter>
-                <action android:name="com.vanraj.assistant.TYPE_TEXT" />
+
+                <action
+                    android:name="com.vanraj.assistant.TYPE_TEXT" />
+
             </intent-filter>
 
         </receiver>
