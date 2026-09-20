@@ -5,7 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-public class CommandReceiver extends BroadcastReceiver {
+public class CommandReceiver
+        extends BroadcastReceiver {
 
     public static final String TYPE_TEXT =
             "com.vanraj.assistant.TYPE_TEXT";
@@ -19,9 +20,9 @@ public class CommandReceiver extends BroadcastReceiver {
             return;
         }
 
-        String action = intent.getAction();
+        if (!TYPE_TEXT.equals(
+                intent.getAction())) {
 
-        if (!TYPE_TEXT.equals(action)) {
             return;
         }
 
@@ -33,12 +34,13 @@ public class CommandReceiver extends BroadcastReceiver {
         }
 
         VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
+                VoiceAccessibilityService
+                        .getInstance();
 
         if (service == null) {
 
             Log.e(
-                    "VoiceAssistant",
+                    "VanrajAI",
                     "Accessibility Service OFF"
             );
 
@@ -49,8 +51,9 @@ public class CommandReceiver extends BroadcastReceiver {
                 service.typeText(text);
 
         Log.d(
-                "VoiceAssistant",
-                "Typing result = " + result
+                "VanrajAI",
+                "Typing result = "
+                        + result
         );
     }
 }
