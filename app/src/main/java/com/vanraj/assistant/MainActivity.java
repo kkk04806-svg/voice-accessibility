@@ -2,128 +2,77 @@ package com.vanraj.assistant;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.Settings;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
-import android.view.Gravity;
-import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
+import android.util.Log;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class MainActivity extends Activity {
 
-    private static final int MIC_PERMISSION = 1001;
+    private static final String TAG = "VoiceAssistant";
 
-    private SpeechRecognizer recognizer;
+    private SpeechRecognizer speechRecognizer;
     private Intent speechIntent;
-
-    private TextView status;
-    private boolean listening = false;
-    private boolean restarting = false;
-
     private final Handler handler = new Handler();
 
-    private final Map<String, String> appAliases =
-            new HashMap<>();
+    private TextView statusText;
+
+    private boolean listening = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        buildUI();
-        setupSpeech();
+        statusText = new TextView(this);
+        statusText.setText("Voice Assistant\n\nStarting...");
+        statusText.setTextSize(20);
+        statusText.setPadding(40, 80, 40, 40);
 
-        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED) {
+        setContentView(statusText);
+
+        if (android.os.Build.VERSION.SDK_INT >= 23 &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
 
             requestPermissions(
                     new String[]{Manifest.permission.RECORD_AUDIO},
-                    MIC_PERMISSION
+                    1001
             );
         } else {
-            startListeningDelayed(700);
+            initializeAssistant();
         }
     }
 
-    private void buildUI() {
+    private void initializeAssistant() {
 
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(35, 40, 35, 35);
-
-        TextView title = new TextView(this);
-        title.setText("VANRAJ AI");
-        title.setTextSize(28);
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(0, 0, 0, 20);
-
-        status = new TextView(this);
-        status.setTextSize(16);
-        status.setTextColor(Color.DKGRAY);
-        status.setPadding(0, 20, 0, 20);
-
-        Button listen = new Button(this);
-        listen.setText("🎤 LISTEN");
-
-        listen.setOnClickListener(v -> {
-            startListening();
-        });
-
-        Button accessibility = new Button(this);
-        accessibility.setText("♿ Accessibility Settings");
-
-        accessibility.setOnClickListener(v -> {
-            try {
-                startActivity(
-                        new Intent(
-                                Settings.ACTION_ACCESSIBILITY_SETTINGS
-                        )
-                );
-            } catch (Exception ignored) {
-            }
-        });
-
-        root.addView(title);
-        root.addView(status);
-        root.addView(listen);
-        root.addView(accessibility);
-
-        setContentView(root);
-    }
-
-    private void setupSpeech() {
+        statusText.setText(
+                "Voice Assistant\n\n" +
+                "Ready\n" +
+                "Bolo bhai..."
+        );
 
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-
-            setStatus(
-                    "❌ Speech recognition unavailable"
+            statusText.setText(
+                    "Speech recognition available nahi hai.\n\n" +
+                    "Phone ka speech service check karo."
             );
-
             return;
         }
 
+        speechRecognizer =
+                SpeechRecognizer.createSpeechRecognizer(this);
+
         speechIntent =
-                new Intent(
-                        RecognizerIntent.ACTION_RECOGNIZE_SPEECH
-                );
+                new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
 
         speechIntent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
@@ -141,42 +90,35 @@ public class MainActivity extends Activity {
         );
 
         speechIntent.putExtra(
+                RecognizerIntent.EXTRA_PARTIAL_RESULTS,
+                true
+        );
+
+        speechIntent.putExtra(
                 RecognizerIntent.EXTRA_MAX_RESULTS,
                 5
         );
 
-        speechIntent.putExtra(
-                RecognizerIntent.EXTRA_PARTIAL_RESULTS,
-                false
-        );
-
-        createRecognizer();
-    }
-
-    private void createRecognizer() {
-
-        if (recognizer != null) {
-            try {
-                recognizer.destroy();
-            } catch (Exception ignored) {
-            }
-        }
-
-        recognizer =
-                SpeechRecognizer.createSpeechRecognizer(this);
-
-        recognizer.setRecognitionListener(
+        speechRecognizer.setRecognitionListener(
                 new RecognitionListener() {
 
                     @Override
                     public void onReadyForSpeech(Bundle params) {
+
                         listening = true;
-                        setStatus("🎤 Sun raha hoon...");
+
+                        statusText.setText(
+                                "🎤 Sun raha hoon...\n\n" +
+                                "Bolo bhai!"
+                        );
                     }
 
                     @Override
                     public void onBeginningOfSpeech() {
-                        setStatus("🎙️ Bolo bhai...");
+
+                        statusText.setText(
+                                "🎤 Sun raha hoon..."
+                        );
                     }
 
                     @Override
@@ -189,8 +131,12 @@ public class MainActivity extends Activity {
 
                     @Override
                     public void onEndOfSpeech() {
+
                         listening = false;
-                        setStatus("⏳ Samajh raha hoon...");
+
+                        statusText.setText(
+                                "Processing..."
+                        );
                     }
 
                     @Override
@@ -198,22 +144,18 @@ public class MainActivity extends Activity {
 
                         listening = false;
 
-                        String msg = speechError(error);
+                        Log.e(
+                                TAG,
+                                "Speech error = " + error
+                        );
 
-                        setStatus("⚠️ " + msg);
+                        statusText.setText(
+                                "Speech error: " +
+                                error +
+                                "\nRetrying..."
+                        );
 
-                        /*
-                         * Error 7 / 11 par recognizer ko recreate
-                         * karke retry karte hain.
-                         */
-                        if (error ==
-                                SpeechRecognizer.ERROR_NO_MATCH ||
-                            error == 11 ||
-                            error ==
-                                SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-
-                            restartListening();
-                        }
+                        retryListening();
                     }
 
                     @Override
@@ -229,22 +171,51 @@ public class MainActivity extends Activity {
                         if (matches == null ||
                                 matches.isEmpty()) {
 
-                            restartListening();
+                            retryListening();
                             return;
                         }
 
-                        String command = matches.get(0);
+                        String command =
+                                matches.get(0);
 
-                        setStatus(
-                                "🗣️ " + command
+                        if (command == null ||
+                                command.trim().isEmpty()) {
+
+                            retryListening();
+                            return;
+                        }
+
+                        command = command.trim();
+
+                        Log.d(
+                                TAG,
+                                "Recognized: " + command
                         );
 
-                        handleCommand(command);
+                        statusText.setText(
+                                "You said:\n" +
+                                command +
+                                "\n\nProcessing..."
+                        );
+
+                        processCommand(command);
                     }
 
                     @Override
-                    public void onPartialResults(
-                            Bundle partialResults) {
+                    public void onPartialResults(Bundle partialResults) {
+
+                        ArrayList<String> partial =
+                                partialResults.getStringArrayList(
+                                        SpeechRecognizer.RESULTS_RECOGNITION
+                                );
+
+                        if (partial != null &&
+                                !partial.isEmpty()) {
+
+                            statusText.setText(
+                                    "🎤 " + partial.get(0)
+                            );
+                        }
                     }
 
                     @Override
@@ -254,24 +225,14 @@ public class MainActivity extends Activity {
                     }
                 }
         );
-    }
 
-    private void startListeningDelayed(long delay) {
-
-        handler.postDelayed(
-                this::startListening,
-                delay
-        );
+        startListening();
     }
 
     private void startListening() {
 
-        if (speechIntent == null) {
-            setupSpeech();
-        }
-
-        if (recognizer == null) {
-            createRecognizer();
+        if (speechRecognizer == null) {
+            return;
         }
 
         if (listening) {
@@ -280,92 +241,97 @@ public class MainActivity extends Activity {
 
         try {
 
-            listening = true;
+            speechRecognizer.cancel();
 
-            recognizer.startListening(
-                    speechIntent
+            handler.postDelayed(
+                    () -> {
+
+                        try {
+
+                            statusText.setText(
+                                    "🎤 Sun raha hoon...\n\n" +
+                                    "Bolo bhai!"
+                            );
+
+                            speechRecognizer.startListening(
+                                    speechIntent
+                            );
+
+                        } catch (Exception e) {
+
+                            Log.e(
+                                    TAG,
+                                    "startListening failed",
+                                    e
+                            );
+
+                            retryListening();
+                        }
+
+                    },
+                    300
             );
 
         } catch (Exception e) {
 
-            listening = false;
-
-            createRecognizer();
-
-            handler.postDelayed(
-                    this::startListening,
-                    500
+            Log.e(
+                    TAG,
+                    "Speech start error",
+                    e
             );
+
+            retryListening();
         }
     }
 
-    private void restartListening() {
+    private void retryListening() {
 
-        if (restarting) return;
+        handler.removeCallbacksAndMessages(null);
 
-        restarting = true;
-
-        handler.postDelayed(() -> {
-
-            restarting = false;
-
-            createRecognizer();
-
-            startListening();
-
-        }, 900);
+        handler.postDelayed(
+                this::startListening,
+                1200
+        );
     }
 
-    /*
-     * ============================
-     * UNIVERSAL COMMAND ENGINE
-     * ============================
-     */
+    private void processCommand(String command) {
 
-    private void handleCommand(String raw) {
-
-        if (raw == null) {
-            restartListening();
+        if (command == null) {
+            retryListening();
             return;
         }
 
-        String command =
-                normalize(raw);
+        String original =
+                command.trim();
 
-        if (command.isEmpty()) {
-            restartListening();
-            return;
-        }
-
-        /*
-         * Stop
-         */
-        if (containsAny(
-                command,
-                "stop assistant",
-                "assistant stop",
-                "band ho ja",
-                "बंद हो जा",
-                "बंद करो"
-        )) {
-
-            setStatus("🛑 Assistant stopped");
-            return;
-        }
+        String lower =
+                original.toLowerCase(
+                        Locale.ROOT
+                );
 
         /*
          * HOME
          */
         if (containsAny(
-                command,
-                "go home",
+                lower,
                 "home",
                 "होम",
-                "होम जाओ"
+                "घर"
         )) {
 
-            executeHome();
-            continueListening();
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.goHome();
+
+                statusText.setText(
+                        "Home opened"
+                );
+            }
+
+            retryListening();
             return;
         }
 
@@ -373,15 +339,25 @@ public class MainActivity extends Activity {
          * BACK
          */
         if (containsAny(
-                command,
-                "go back",
+                lower,
                 "back",
-                "पीछे जाओ",
-                "वापस जाओ"
+                "वापस",
+                "पीछे"
         )) {
 
-            executeBack();
-            continueListening();
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.goBack();
+
+                statusText.setText(
+                        "Back"
+                );
+            }
+
+            retryListening();
             return;
         }
 
@@ -389,361 +365,349 @@ public class MainActivity extends Activity {
          * RECENTS
          */
         if (containsAny(
-                command,
-                "recent apps",
-                "recents",
+                lower,
                 "recent",
-                "रीसेंट ऐप"
+                "recents",
+                "रीसेंट"
         )) {
 
-            executeRecents();
-            continueListening();
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.openRecents();
+
+                statusText.setText(
+                        "Recent apps opened"
+                );
+            }
+
+            retryListening();
             return;
         }
 
         /*
-         * SCROLL
+         * SCROLL DOWN
          */
         if (containsAny(
-                command,
+                lower,
                 "scroll down",
                 "नीचे स्क्रोल",
-                "नीचे करो"
+                "नीचे स्क्रॉल"
         )) {
 
-            executeScrollDown();
-            continueListening();
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+                service.scrollDown();
+            }
+
+            retryListening();
             return;
         }
 
+        /*
+         * SCROLL UP
+         */
         if (containsAny(
-                command,
+                lower,
                 "scroll up",
                 "ऊपर स्क्रोल",
-                "ऊपर करो"
+                "ऊपर स्क्रॉल"
         )) {
 
-            executeScrollUp();
-            continueListening();
-            return;
-        }
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
 
-        /*
-         * COMPOUND COMMAND
-         */
-        if (isCompound(command)) {
-
-            executeCompound(command);
-            return;
-        }
-
-        /*
-         * SEARCH
-         */
-        if (command.startsWith("search ") ||
-            command.startsWith("सर्च ") ||
-            command.contains("search karo") ||
-            command.contains("सर्च करो")) {
-
-            String query =
-                    extractSearch(command);
-
-            if (!query.isEmpty()) {
-                webSearch(query);
+            if (service != null) {
+                service.scrollUp();
             }
 
-            continueListening();
+            retryListening();
             return;
         }
 
         /*
-         * TYPE
+         * TYPE COMMAND
          */
-        if (command.startsWith("type ") ||
-            command.startsWith("टाइप ") ||
-            command.contains("likho ") ||
-            command.contains("लिखो ")) {
+        if (lower.startsWith("type ")) {
 
             String text =
-                    extractType(command);
+                    original.substring(5).trim();
 
-            if (!text.isEmpty()) {
-                typeText(text);
-            }
+            typeText(text);
 
-            continueListening();
+            return;
+        }
+
+        if (lower.startsWith("write ")) {
+
+            String text =
+                    original.substring(6).trim();
+
+            typeText(text);
+
+            return;
+        }
+
+        if (lower.startsWith("लिखो ")) {
+
+            String text =
+                    original.substring(6).trim();
+
+            typeText(text);
+
             return;
         }
 
         /*
-         * CLICK
+         * CLICK COMMAND
          */
-        if (command.startsWith("click ") ||
-            command.startsWith("क्लिक ") ||
-            command.startsWith("press ")) {
+        if (lower.startsWith("click ")) {
 
-            String target =
-                    extractAfterCommand(
-                            command,
-                            "click",
-                            "क्लिक",
-                            "press"
-                    );
+            String text =
+                    original.substring(6).trim();
 
-            clickText(target);
+            clickText(text);
 
-            continueListening();
+            return;
+        }
+
+        if (lower.startsWith("क्लिक ")) {
+
+            String text =
+                    original.substring(6).trim();
+
+            clickText(text);
+
             return;
         }
 
         /*
-         * FILE / CODING
+         * CODING
          */
-        if (command.contains("file banao") ||
-            command.contains("फाइल बनाओ") ||
-            command.contains("code file") ||
-            command.contains("कोड फाइल")) {
+        if (containsAny(
+                lower,
+                "code",
+                "coding",
+                "program",
+                "script",
+                "कोड",
+                "कोडिंग"
+        )) {
 
-            CodingEngine.handle(
-                    this,
-                    command
+            String result =
+                    CodingEngine.handle(original);
+
+            statusText.setText(
+                    result
             );
 
-            continueListening();
+            retryListening();
             return;
         }
 
         /*
          * TRADING
          */
-        if (command.contains("btc") ||
-            command.contains("bitcoin") ||
-            command.contains("trading") ||
-            command.contains("trade") ||
-            command.contains("ट्रेडिंग")) {
+        if (containsAny(
+                lower,
+                "trading",
+                "trade",
+                "btc",
+                "bitcoin",
+                "crypto",
+                "trading",
+                "ट्रेडिंग",
+                "बिटकॉइन"
+        )) {
 
-            TradingSkill.handle(
-                    this,
-                    command
+            String result =
+                    TradingSkill.handle(original);
+
+            statusText.setText(
+                    result
             );
 
-            continueListening();
+            retryListening();
             return;
         }
 
         /*
-         * RESEARCH / WEB
+         * OPEN APP
          */
-        if (command.contains("research") ||
-            command.contains("research karo") ||
-            command.contains("जानकारी") ||
-            command.contains("information") ||
-            command.contains("web search")) {
-
-            String query =
-                    extractResearch(command);
-
-            if (!query.isEmpty()) {
-                webSearch(query);
-            }
-
-            continueListening();
-            return;
-        }
-
-        /*
-         * APP OPEN
-         */
-        if (looksLikeOpenCommand(command)) {
+        if (containsAny(
+                lower,
+                "open",
+                "launch",
+                "start",
+                "khol",
+                "kholo",
+                "kholna",
+                "ओपन",
+                "खोल",
+                "खोलो",
+                "चलाओ"
+        )) {
 
             String appName =
-                    extractAppName(command);
+                    extractAppName(original);
 
             if (!appName.isEmpty()) {
 
                 boolean opened =
-                        openInstalledApp(appName);
+                        openApp(appName);
 
-                if (!opened) {
+                if (opened) {
 
-                    setStatus(
-                            "❌ App nahi mila: "
-                                    + appName
+                    statusText.setText(
+                            "Opening " +
+                            appName
+                    );
+
+                } else {
+
+                    statusText.setText(
+                            "App nahi mila: " +
+                            appName
                     );
                 }
-            }
 
-            continueListening();
-            return;
+                retryListening();
+                return;
+            }
         }
 
         /*
-         * Direct app name
+         * DIRECT APP NAME
          */
-        if (openInstalledApp(command)) {
+        if (openApp(original)) {
 
-            continueListening();
+            retryListening();
             return;
         }
 
-        setStatus(
-                "❓ Command samajh nahi aayi: "
-                        + raw
+        statusText.setText(
+                "Command samajh nahi aayi:\n\n" +
+                original
         );
 
-        continueListening();
+        retryListening();
     }
 
-    /*
-     * ============================
-     * COMPOUND COMMANDS
-     * ============================
-     */
+    private void typeText(String text) {
 
-    private boolean isCompound(String command) {
+        VoiceAccessibilityService service =
+                VoiceAccessibilityService.getInstance();
 
-        return command.contains(" aur ") ||
-               command.contains(" and ") ||
-               command.contains(" फिर ") ||
-               command.contains(" then ");
-    }
+        if (service == null) {
 
-    private void executeCompound(String command) {
-
-        String[] parts =
-                command.split(
-                        "\\s+(aur|and|फिर|then)\\s+"
-                );
-
-        for (String part : parts) {
-
-            part = part.trim();
-
-            if (part.isEmpty()) continue;
-
-            executeSinglePart(part);
-
-            try {
-                Thread.sleep(1200);
-            } catch (InterruptedException ignored) {
-            }
-        }
-
-        continueListening();
-    }
-
-    private void executeSinglePart(String command) {
-
-        if (looksLikeOpenCommand(command)) {
-
-            String app =
-                    extractAppName(command);
-
-            openInstalledApp(app);
-            return;
-        }
-
-        if (command.startsWith("search ")) {
-
-            webSearch(
-                    command.substring(7).trim()
+            statusText.setText(
+                    "Accessibility Service OFF hai."
             );
+
+            retryListening();
             return;
         }
 
-        if (command.startsWith("type ")) {
+        boolean result =
+                service.typeText(text);
 
-            typeText(
-                    command.substring(5).trim()
+        if (result) {
+
+            statusText.setText(
+                    "Text type ho gaya."
             );
-            return;
-        }
 
-        if (command.startsWith("click ")) {
+        } else {
 
-            clickText(
-                    command.substring(6).trim()
+            statusText.setText(
+                    "Editable field nahi mila."
             );
-            return;
         }
 
-        handleCommand(command);
+        retryListening();
     }
 
-    /*
-     * ============================
-     * INSTALLED APP DISCOVERY
-     * ============================
-     */
+    private void clickText(String text) {
 
-    private boolean openInstalledApp(String requested) {
+        VoiceAccessibilityService service =
+                VoiceAccessibilityService.getInstance();
 
-        if (requested == null) return false;
+        if (service == null) {
 
-        String wanted =
-                normalize(requested);
+            statusText.setText(
+                    "Accessibility Service OFF hai."
+            );
 
-        if (wanted.isEmpty()) return false;
+            retryListening();
+            return;
+        }
+
+        boolean result =
+                service.clickText(text);
+
+        if (result) {
+
+            statusText.setText(
+                    "Clicked: " +
+                    text
+            );
+
+        } else {
+
+            statusText.setText(
+                    "Button/text nahi mila: " +
+                    text
+            );
+        }
+
+        retryListening();
+    }
+
+    private boolean openApp(String wanted) {
+
+        if (wanted == null ||
+                wanted.trim().isEmpty()) {
+
+            return false;
+        }
+
+        String search =
+                normalize(wanted);
 
         PackageManager pm =
                 getPackageManager();
 
         Intent launcherIntent =
                 new Intent(
-                        Intent.ACTION_MAIN
+                        Intent.ACTION_MAIN,
+                        null
                 );
 
         launcherIntent.addCategory(
                 Intent.CATEGORY_LAUNCHER
         );
 
-        List<ResolveInfo> apps =
+        List<android.content.pm.ResolveInfo> apps =
                 pm.queryIntentActivities(
                         launcherIntent,
                         PackageManager.MATCH_ALL
                 );
 
-        /*
-         * First aliases
-         */
-        String aliasPackage =
-                findKnownAlias(wanted);
-
-        if (aliasPackage != null) {
-
-            Intent launch =
-                    pm.getLaunchIntentForPackage(
-                            aliasPackage
-                    );
-
-            if (launch != null) {
-
-                launch.addFlags(
-                        Intent.FLAG_ACTIVITY_NEW_TASK
-                );
-
-                startActivity(launch);
-
-                setStatus(
-                        "🚀 Opening "
-                                + requested
-                );
-
-                return true;
-            }
-        }
-
-        /*
-         * Dynamic installed app discovery
-         */
-        ResolveInfo best = null;
+        android.content.pm.ResolveInfo best =
+                null;
 
         int bestScore = 0;
 
-        for (ResolveInfo info : apps) {
+        for (android.content.pm.ResolveInfo info : apps) {
 
-            if (info.activityInfo == null)
+            if (info == null ||
+                    info.activityInfo == null) {
                 continue;
+            }
 
             CharSequence label =
                     info.loadLabel(pm);
@@ -756,27 +720,11 @@ public class MainActivity extends Activity {
             String normalizedLabel =
                     normalize(appLabel);
 
-            String packageName =
-                    info.activityInfo.packageName;
-
-            String normalizedPackage =
-                    normalize(packageName);
-
-            int score = 0;
-
-            if (normalizedLabel.equals(wanted)) {
-                score = 100;
-            } else if (
-                    normalizedLabel.contains(wanted)) {
-                score = 80;
-            } else if (
-                    wanted.contains(normalizedLabel) &&
-                    normalizedLabel.length() > 2) {
-                score = 70;
-            } else if (
-                    normalizedPackage.contains(wanted)) {
-                score = 50;
-            }
+            int score =
+                    getAppScore(
+                            search,
+                            normalizedLabel
+                    );
 
             if (score > bestScore) {
 
@@ -785,302 +733,258 @@ public class MainActivity extends Activity {
             }
         }
 
-        if (best == null) {
+        /*
+         * Common Hindi aliases
+         */
+        if (best == null ||
+                bestScore < 50) {
+
+            for (android.content.pm.ResolveInfo info : apps) {
+
+                if (info == null ||
+                        info.activityInfo == null) {
+                    continue;
+                }
+
+                String packageName =
+                        info.activityInfo.packageName;
+
+                int score =
+                        getPackageScore(
+                                search,
+                                packageName
+                        );
+
+                if (score > bestScore) {
+
+                    bestScore = score;
+                    best = info;
+                }
+            }
+        }
+
+        if (best == null ||
+                best.activityInfo == null) {
+
             return false;
         }
 
         try {
 
-            Intent launch =
+            Intent launchIntent =
                     new Intent(
                             Intent.ACTION_MAIN
                     );
 
-            launch.addCategory(
+            launchIntent.addCategory(
                     Intent.CATEGORY_LAUNCHER
             );
 
-            launch.setClassName(
+            launchIntent.setClassName(
                     best.activityInfo.packageName,
                     best.activityInfo.name
             );
 
-            launch.addFlags(
-                    Intent.FLAG_ACTIVITY_NEW_TASK
+            launchIntent.addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK |
+                    Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED
             );
 
-            startActivity(launch);
-
-            setStatus(
-                    "🚀 Opening "
-                            + best.loadLabel(pm)
+            startActivity(
+                    launchIntent
             );
 
             return true;
 
         } catch (Exception e) {
 
+            Log.e(
+                    TAG,
+                    "Could not launch app",
+                    e
+            );
+
             return false;
         }
     }
 
-    private String findKnownAlias(String command) {
+    private int getAppScore(
+            String wanted,
+            String label) {
 
-        String c = command;
-
-        if (c.contains("whatsapp") ||
-            c.contains("व्हाट्सएप") ||
-            c.contains("व्हाट्सऐप")) {
-
-            return "com.whatsapp";
+        if (wanted.equals(label)) {
+            return 100;
         }
 
-        if (c.contains("youtube") ||
-            c.contains("यूट्यूब") ||
-            c.contains("युटुब")) {
-
-            return "com.google.android.youtube";
+        if (wanted.contains(label) &&
+                label.length() > 2) {
+            return 90;
         }
 
-        if (c.contains("chrome") ||
-            c.contains("क्रोम")) {
-
-            return "com.android.chrome";
+        if (label.contains(wanted) &&
+                wanted.length() > 2) {
+            return 80;
         }
 
-        if (c.contains("telegram") ||
-            c.contains("टेलीग्राम")) {
-
-            return "org.telegram.messenger";
+        if (hindiAlias(wanted, label)) {
+            return 85;
         }
 
-        if (c.contains("instagram") ||
-            c.contains("इंस्टाग्राम")) {
+        String[] words =
+                wanted.split("\\s+");
 
-            return "com.instagram.android";
+        int score = 0;
+
+        for (String word : words) {
+
+            if (word.length() < 3) {
+                continue;
+            }
+
+            if (label.contains(word)) {
+                score += 20;
+            }
         }
 
-        if (c.contains("facebook") ||
-            c.contains("फेसबुक")) {
-
-            return "com.facebook.katana";
-        }
-
-        if (c.contains("gmail") ||
-            c.contains("जीमेल")) {
-
-            return "com.google.android.gm";
-        }
-
-        if (c.contains("maps") ||
-            c.contains("google maps") ||
-            c.contains("मैप") ||
-            c.contains("मैप्स")) {
-
-            return "com.google.android.apps.maps";
-        }
-
-        if (c.contains("calculator") ||
-            c.contains("calc") ||
-            c.contains("कैलकुलेटर")) {
-
-            return "com.vivo.calculator";
-        }
-
-        if (c.contains("play store") ||
-            c.contains("playstore") ||
-            c.contains("प्ले स्टोर")) {
-
-            return "com.android.vending";
-        }
-
-        return null;
+        return score;
     }
 
-    /*
-     * ============================
-     * ACCESSIBILITY ACTIONS
-     * ============================
-     */
+    private int getPackageScore(
+            String wanted,
+            String packageName) {
 
-    private void typeText(String text) {
+        String pkg =
+                packageName.toLowerCase(
+                        Locale.ROOT
+                );
 
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service == null) {
-
-            setStatus(
-                    "⚠️ Accessibility Service ON karo"
-            );
-
-            return;
+        if (wanted.contains("whatsapp") &&
+                pkg.contains("whatsapp")) {
+            return 90;
         }
 
-        boolean result =
-                service.typeText(text);
+        if ((wanted.contains("youtube") ||
+             wanted.contains("यूट्यूब") ||
+             wanted.contains("युटुब")) &&
+                pkg.contains("youtube")) {
+            return 90;
+        }
 
-        setStatus(
-                result
-                        ? "⌨️ Text typed"
-                        : "❌ Text field nahi mila"
-        );
+        if (wanted.contains("chrome") &&
+                pkg.contains("chrome")) {
+            return 90;
+        }
+
+        if ((wanted.contains("telegram") ||
+             wanted.contains("टेलीग्राम")) &&
+                pkg.contains("telegram")) {
+            return 90;
+        }
+
+        if (wanted.contains("instagram") &&
+                pkg.contains("instagram")) {
+            return 90;
+        }
+
+        if (wanted.contains("facebook") &&
+                pkg.contains("facebook")) {
+            return 90;
+        }
+
+        if (wanted.contains("calculator") &&
+                pkg.contains("calculator")) {
+            return 90;
+        }
+
+        if (wanted.contains("maps") &&
+                pkg.contains("maps")) {
+            return 90;
+        }
+
+        return 0;
     }
 
-    private void clickText(String text) {
+    private boolean hindiAlias(
+            String wanted,
+            String label) {
 
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service == null) {
-
-            setStatus(
-                    "⚠️ Accessibility Service ON karo"
-            );
-
-            return;
+        if ((wanted.contains("व्हाट्सएप") ||
+             wanted.contains("वाट्सएप")) &&
+                label.contains("whatsapp")) {
+            return true;
         }
 
-        boolean result =
-                service.clickText(text);
-
-        setStatus(
-                result
-                        ? "👆 Clicked: " + text
-                        : "❌ Button/text nahi mila"
-        );
-    }
-
-    private void executeBack() {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service != null) {
-            service.goBack();
-        }
-    }
-
-    private void executeHome() {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service != null) {
-            service.goHome();
-        }
-    }
-
-    private void executeRecents() {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service != null) {
-            service.openRecents();
-        }
-    }
-
-    private void executeScrollDown() {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service != null) {
-            service.scrollDown();
-        }
-    }
-
-    private void executeScrollUp() {
-
-        VoiceAccessibilityService service =
-                VoiceAccessibilityService.getInstance();
-
-        if (service != null) {
-            service.scrollUp();
-        }
-    }
-
-    /*
-     * ============================
-     * WEB
-     * ============================
-     */
-
-    private void webSearch(String query) {
-
-        if (query == null ||
-                query.trim().isEmpty()) {
-            return;
+        if ((wanted.contains("यूट्यूब") ||
+             wanted.contains("युटुब") ||
+             wanted.contains("यूटुब")) &&
+                label.contains("youtube")) {
+            return true;
         }
 
-        try {
-
-            String url =
-                    "https://www.google.com/search?q="
-                            + Uri.encode(query);
-
-            Intent intent =
-                    new Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse(url)
-                    );
-
-            startActivity(intent);
-
-            setStatus(
-                    "🌐 Searching: "
-                            + query
-            );
-
-        } catch (Exception e) {
-
-            setStatus(
-                    "❌ Browser open nahi hua"
-            );
+        if ((wanted.contains("इंस्टाग्राम")) &&
+                label.contains("instagram")) {
+            return true;
         }
-    }
 
-    /*
-     * ============================
-     * COMMAND HELPERS
-     * ============================
-     */
+        if ((wanted.contains("टेलीग्राम")) &&
+                label.contains("telegram")) {
+            return true;
+        }
 
-    private boolean looksLikeOpenCommand(
-            String command) {
+        if ((wanted.contains("फेसबुक")) &&
+                label.contains("facebook")) {
+            return true;
+        }
 
-        return command.startsWith("open ") ||
-               command.startsWith("launch ") ||
-               command.startsWith("start ") ||
-               command.startsWith("khol ") ||
-               command.startsWith("kholo ") ||
-               command.startsWith("chalao ") ||
-               command.startsWith("खोल ") ||
-               command.startsWith("खोलो ") ||
-               command.startsWith("ओपन ");
+        if ((wanted.contains("क्रोम")) &&
+                label.contains("chrome")) {
+            return true;
+        }
+
+        if ((wanted.contains("कैलकुलेटर")) &&
+                label.contains("calculator")) {
+            return true;
+        }
+
+        if ((wanted.contains("मैप") ||
+             wanted.contains("मैप्स")) &&
+                label.contains("maps")) {
+            return true;
+        }
+
+        return false;
     }
 
     private String extractAppName(
             String command) {
 
-        String result = command;
+        String result =
+                command.trim();
 
         String[] prefixes = {
+
                 "open ",
                 "launch ",
                 "start ",
                 "khol ",
                 "kholo ",
-                "chalao ",
+                "kholna ",
+
+                "ओपन ",
                 "खोल ",
                 "खोलो ",
-                "ओपन "
+                "चलाओ "
         };
 
         for (String prefix : prefixes) {
 
-            if (result.startsWith(prefix)) {
+            if (result
+                    .toLowerCase(
+                            Locale.ROOT
+                    )
+                    .startsWith(
+                            prefix
+                    )) {
 
                 result =
                         result.substring(
@@ -1091,79 +995,66 @@ public class MainActivity extends Activity {
             }
         }
 
-        return result;
-    }
+        /*
+         * Remove common trailing Hindi/English words
+         */
+        String[] endings = {
 
-    private String extractAfterCommand(
-            String command,
-            String... prefixes) {
+                " kar",
+                " karo",
+                " please",
 
-        for (String prefix : prefixes) {
+                " करना",
+                " करो",
+                " कर",
+                " खोल",
+                " खोलो"
+        };
 
-            if (command.startsWith(prefix)) {
+        String lower =
+                result.toLowerCase(
+                        Locale.ROOT
+                );
 
-                return command.substring(
-                        prefix.length()
-                ).trim();
+        for (String ending : endings) {
+
+            if (lower.endsWith(ending)) {
+
+                result =
+                        result.substring(
+                                0,
+                                result.length()
+                                        - ending.length()
+                        ).trim();
+
+                break;
             }
         }
 
-        return command;
+        return result;
     }
 
-    private String extractType(String command) {
+    private String normalize(
+            String text) {
 
-        String[] prefixes = {
-                "type ",
-                "टाइप ",
-                "likho ",
-                "लिखो "
-        };
-
-        return extractAfterCommand(
-                command,
-                prefixes
-        );
-    }
-
-    private String extractSearch(String command) {
-
-        String[] prefixes = {
-                "search ",
-                "सर्च ",
-                "search karo ",
-                "सर्च करो "
-        };
-
-        return extractAfterCommand(
-                command,
-                prefixes
-        );
-    }
-
-    private String extractResearch(
-            String command) {
-
-        String[] prefixes = {
-                "research ",
-                "research karo ",
-                "web search ",
-                "जानकारी "
-        };
-
-        return extractAfterCommand(
-                command,
-                prefixes
-        );
+        return text
+                .toLowerCase(
+                        Locale.ROOT
+                )
+                .trim()
+                .replaceAll(
+                        "\\s+",
+                        " "
+                );
     }
 
     private boolean containsAny(
-            String command,
-            String... words) {
+            String text,
+            String... values) {
 
-        for (String word : words) {
+        for (String value : values) {
 
-            if (command.contains(word)) {
+            if (text.contains(value)) {
                 return true;
             }
         }
@@ -1171,87 +1062,21 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    private String normalize(String input) {
-
-        return input
-                .toLowerCase(Locale.ROOT)
-                .trim()
-                .replaceAll("\\s+", " ");
-    }
-
-    private void continueListening() {
-
-        handler.postDelayed(
-                this::startListening,
-                800
-        );
-    }
-
-    private void setStatus(String text) {
-
-        if (status != null) {
-            status.setText(text);
-        }
-    }
-
-    private String speechError(int error) {
-
-        switch (error) {
-
-            case SpeechRecognizer.ERROR_AUDIO:
-                return "Audio error";
-
-            case SpeechRecognizer.ERROR_CLIENT:
-                return "Client error";
-
-            case SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS:
-                return "Microphone permission missing";
-
-            case SpeechRecognizer.ERROR_NETWORK:
-                return "Network error";
-
-            case SpeechRecognizer.ERROR_NETWORK_TIMEOUT:
-                return "Network timeout";
-
-            case SpeechRecognizer.ERROR_NO_MATCH:
-                return "Speech match nahi mila";
-
-            case SpeechRecognizer.ERROR_RECOGNIZER_BUSY:
-                return "Recognizer busy";
-
-            case SpeechRecognizer.ERROR_SERVER:
-                return "Speech server error";
-
-            case SpeechRecognizer.ERROR_SPEECH_TIMEOUT:
-                return "Speech timeout";
-
-            case 11:
-                return "Speech service disconnected";
-
-            case 12:
-                return "Language unsupported";
-
-            case 13:
-                return "Language unavailable";
-
-            default:
-                return "Speech error: " + error;
-        }
-    }
-
     @Override
     protected void onDestroy() {
 
-        handler.removeCallbacksAndMessages(null);
+        handler.removeCallbacksAndMessages(
+                null
+        );
 
-        if (recognizer != null) {
+        if (speechRecognizer != null) {
 
             try {
-                recognizer.destroy();
+                speechRecognizer.destroy();
             } catch (Exception ignored) {
             }
 
-            recognizer = null;
+            speechRecognizer = null;
         }
 
         super.onDestroy();
