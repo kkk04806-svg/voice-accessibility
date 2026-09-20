@@ -1,22 +1,56 @@
 package com.vanraj.assistant;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 
-public class CommandEngine {
+public class CommandReceiver extends BroadcastReceiver {
 
-    private final SkillEngine skillEngine;
+    public static final String TYPE_TEXT =
+            "com.vanraj.assistant.TYPE_TEXT";
 
-    public CommandEngine(Context context) {
-        skillEngine = new SkillEngine(context);
-    }
+    @Override
+    public void onReceive(
+            Context context,
+            Intent intent) {
 
-    public String execute(String command) {
-        if (command == null ||
-                command.trim().isEmpty()) {
-
-            return "Command nahi mili bhai.";
+        if (intent == null) {
+            return;
         }
 
-        return skillEngine.execute(command);
+        String action = intent.getAction();
+
+        if (!TYPE_TEXT.equals(action)) {
+            return;
+        }
+
+        String text =
+                intent.getStringExtra("text");
+
+        if (text == null) {
+            text = "";
+        }
+
+        VoiceAccessibilityService service =
+                VoiceAccessibilityService.getInstance();
+
+        if (service == null) {
+
+            Log.e(
+                    "VoiceAssistant",
+                    "Accessibility Service OFF"
+            );
+
+            return;
+        }
+
+        boolean result =
+                service.typeText(text);
+
+        Log.d(
+                "VoiceAssistant",
+                "Typing result = " + result
+        );
     }
 }
