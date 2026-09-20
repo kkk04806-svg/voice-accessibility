@@ -10,7 +10,7 @@ public class VoiceAccessibilityService
         extends AccessibilityService {
 
     private static final String TAG =
-            "VoiceAssistant";
+            "VanrajAI";
 
     private static VoiceAccessibilityService instance;
 
@@ -27,32 +27,22 @@ public class VoiceAccessibilityService
         );
     }
 
-    public static VoiceAccessibilityService
-    getInstance() {
-
+    public static VoiceAccessibilityService getInstance() {
         return instance;
     }
 
     public static boolean isRunning() {
-
         return instance != null;
     }
 
     @Override
     public void onAccessibilityEvent(
             AccessibilityEvent event) {
-
-        // Screen events can be processed here
-        // in the next agent version.
     }
 
     @Override
     public void onInterrupt() {
-
-        Log.d(
-                TAG,
-                "Accessibility interrupted"
-        );
+        Log.d(TAG, "Accessibility interrupted");
     }
 
     @Override
@@ -78,12 +68,6 @@ public class VoiceAccessibilityService
                 getRootInActiveWindow();
 
         if (root == null) {
-
-            Log.e(
-                    TAG,
-                    "Active window nahi mila"
-            );
-
             return false;
         }
 
@@ -107,18 +91,13 @@ public class VoiceAccessibilityService
 
             root.recycle();
 
-            Log.e(
-                    TAG,
-                    "Editable field nahi mila"
-            );
-
             return false;
         }
 
-        Bundle arguments =
+        Bundle args =
                 new Bundle();
 
-        arguments.putCharSequence(
+        args.putCharSequence(
                 AccessibilityNodeInfo
                         .ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
                 text
@@ -127,52 +106,13 @@ public class VoiceAccessibilityService
         boolean result =
                 input.performAction(
                         AccessibilityNodeInfo.ACTION_SET_TEXT,
-                        arguments
+                        args
                 );
 
         input.recycle();
         root.recycle();
 
         return result;
-    }
-
-    private AccessibilityNodeInfo
-    findEditableField(
-            AccessibilityNodeInfo node) {
-
-        if (node == null) {
-            return null;
-        }
-
-        if (node.isEditable() &&
-                node.isFocused()) {
-
-            return AccessibilityNodeInfo
-                    .obtain(node);
-        }
-
-        for (int i = 0;
-             i < node.getChildCount();
-             i++) {
-
-            AccessibilityNodeInfo child =
-                    node.getChild(i);
-
-            if (child == null) {
-                continue;
-            }
-
-            AccessibilityNodeInfo result =
-                    findEditableField(child);
-
-            child.recycle();
-
-            if (result != null) {
-                return result;
-            }
-        }
-
-        return null;
     }
 
     public boolean clickText(String text) {
@@ -228,8 +168,10 @@ public class VoiceAccessibilityService
                         .toLowerCase();
 
         if (node.isClickable() &&
-                (nodeText.contains(wanted) ||
-                 nodeDescription.contains(wanted))) {
+                (
+                    nodeText.contains(wanted) ||
+                    nodeDescription.contains(wanted)
+                )) {
 
             return node.performAction(
                     AccessibilityNodeInfo.ACTION_CLICK
@@ -261,6 +203,43 @@ public class VoiceAccessibilityService
         }
 
         return false;
+    }
+
+    private AccessibilityNodeInfo findEditableField(
+            AccessibilityNodeInfo node) {
+
+        if (node == null) {
+            return null;
+        }
+
+        if (node.isEditable()) {
+
+            return AccessibilityNodeInfo
+                    .obtain(node);
+        }
+
+        for (int i = 0;
+             i < node.getChildCount();
+             i++) {
+
+            AccessibilityNodeInfo child =
+                    node.getChild(i);
+
+            if (child == null) {
+                continue;
+            }
+
+            AccessibilityNodeInfo result =
+                    findEditableField(child);
+
+            child.recycle();
+
+            if (result != null) {
+                return result;
+            }
+        }
+
+        return null;
     }
 
     public boolean goBack() {
