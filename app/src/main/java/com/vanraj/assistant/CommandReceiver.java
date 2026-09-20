@@ -27,7 +27,9 @@ public class CommandReceiver
         }
 
         String text =
-                intent.getStringExtra("text");
+                intent.getStringExtra(
+                        "text"
+                );
 
         if (text == null) {
             text = "";
