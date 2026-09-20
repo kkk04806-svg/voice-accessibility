@@ -11,6 +11,9 @@ public class CommandReceiver
     public static final String TYPE_TEXT =
             "com.vanraj.assistant.TYPE_TEXT";
 
+    private static final String TAG =
+            "VoiceAssistant";
+
     @Override
     public void onReceive(
             Context context,
@@ -20,9 +23,10 @@ public class CommandReceiver
             return;
         }
 
-        if (!TYPE_TEXT.equals(
-                intent.getAction())) {
+        String action =
+                intent.getAction();
 
+        if (!TYPE_TEXT.equals(action)) {
             return;
         }
 
@@ -42,7 +46,7 @@ public class CommandReceiver
         if (service == null) {
 
             Log.e(
-                    "VanrajAI",
+                    TAG,
                     "Accessibility Service OFF"
             );
 
@@ -53,9 +57,8 @@ public class CommandReceiver
                 service.typeText(text);
 
         Log.d(
-                "VanrajAI",
-                "Typing result = "
-                        + result
+                TAG,
+                "Typing result = " + result
         );
     }
 }
