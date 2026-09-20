@@ -6,43 +6,65 @@ import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-public class VoiceAccessibilityService extends AccessibilityService {
+public class VoiceAccessibilityService
+        extends AccessibilityService {
 
-    private static final String TAG = "VoiceAssistant";
+    private static final String TAG =
+            "VoiceAssistant";
 
     private static VoiceAccessibilityService instance;
 
     @Override
     protected void onServiceConnected() {
+
         super.onServiceConnected();
 
         instance = this;
 
-        Log.d(TAG, "Accessibility Service Connected");
+        Log.d(
+                TAG,
+                "Accessibility Service Connected"
+        );
     }
 
-    public static VoiceAccessibilityService getInstance() {
+    public static VoiceAccessibilityService
+    getInstance() {
+
         return instance;
     }
 
     public static boolean isRunning() {
+
         return instance != null;
     }
 
     @Override
-    public void onAccessibilityEvent(AccessibilityEvent event) {
-        // Accessibility events yahan receive hote hain.
+    public void onAccessibilityEvent(
+            AccessibilityEvent event) {
+
+        // Screen events can be processed here
+        // in the next agent version.
     }
 
     @Override
     public void onInterrupt() {
-        Log.d(TAG, "Accessibility Service Interrupted");
+
+        Log.d(
+                TAG,
+                "Accessibility interrupted"
+        );
     }
 
     @Override
     public void onDestroy() {
+
         instance = null;
-        Log.d(TAG, "Accessibility Service Destroyed");
+
+        Log.d(
+                TAG,
+                "Accessibility destroyed"
+        );
+
         super.onDestroy();
     }
 
@@ -52,45 +74,61 @@ public class VoiceAccessibilityService extends AccessibilityService {
             text = "";
         }
 
-        AccessibilityNodeInfo root = getRootInActiveWindow();
+        AccessibilityNodeInfo root =
+                getRootInActiveWindow();
 
         if (root == null) {
-            Log.e(TAG, "Active window nahi mila");
+
+            Log.e(
+                    TAG,
+                    "Active window nahi mila"
+            );
+
             return false;
         }
 
-        AccessibilityNodeInfo input = root.findFocus(
-                AccessibilityNodeInfo.FOCUS_INPUT
-        );
+        AccessibilityNodeInfo input =
+                root.findFocus(
+                        AccessibilityNodeInfo.FOCUS_INPUT
+                );
 
-        if (input == null || !input.isEditable()) {
+        if (input == null ||
+                !input.isEditable()) {
 
             if (input != null) {
                 input.recycle();
             }
 
-            input = findEditableField(root);
+            input =
+                    findEditableField(root);
         }
 
         if (input == null) {
-            Log.e(TAG, "Editable text field nahi mila");
+
             root.recycle();
+
+            Log.e(
+                    TAG,
+                    "Editable field nahi mila"
+            );
+
             return false;
         }
 
-        Bundle arguments = new Bundle();
+        Bundle arguments =
+                new Bundle();
 
         arguments.putCharSequence(
-                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                AccessibilityNodeInfo
+                        .ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
                 text
         );
 
-        boolean result = input.performAction(
-                AccessibilityNodeInfo.ACTION_SET_TEXT,
-                arguments
-        );
-
-        Log.d(TAG, "Typing result: " + result);
+        boolean result =
+                input.performAction(
+                        AccessibilityNodeInfo.ACTION_SET_TEXT,
+                        arguments
+                );
 
         input.recycle();
         root.recycle();
@@ -98,26 +136,34 @@ public class VoiceAccessibilityService extends AccessibilityService {
         return result;
     }
 
-    private AccessibilityNodeInfo findEditableField(
+    private AccessibilityNodeInfo
+    findEditableField(
             AccessibilityNodeInfo node) {
 
         if (node == null) {
             return null;
         }
 
-        if (node.isEditable() && node.isFocused()) {
-            return AccessibilityNodeInfo.obtain(node);
+        if (node.isEditable() &&
+                node.isFocused()) {
+
+            return AccessibilityNodeInfo
+                    .obtain(node);
         }
 
-        for (int i = 0; i < node.getChildCount(); i++) {
+        for (int i = 0;
+             i < node.getChildCount();
+             i++) {
 
-            AccessibilityNodeInfo child = node.getChild(i);
+            AccessibilityNodeInfo child =
+                    node.getChild(i);
 
             if (child == null) {
                 continue;
             }
 
-            AccessibilityNodeInfo result = findEditableField(child);
+            AccessibilityNodeInfo result =
+                    findEditableField(child);
 
             child.recycle();
 
@@ -127,5 +173,154 @@ public class VoiceAccessibilityService extends AccessibilityService {
         }
 
         return null;
+    }
+
+    public boolean clickText(String text) {
+
+        if (text == null ||
+                text.trim().isEmpty()) {
+
+            return false;
+        }
+
+        AccessibilityNodeInfo root =
+                getRootInActiveWindow();
+
+        if (root == null) {
+            return false;
+        }
+
+        boolean result =
+                clickRecursive(
+                        root,
+                        text.toLowerCase()
+                );
+
+        root.recycle();
+
+        return result;
+    }
+
+    private boolean clickRecursive(
+            AccessibilityNodeInfo node,
+            String wanted) {
+
+        if (node == null) {
+            return false;
+        }
+
+        CharSequence text =
+                node.getText();
+
+        CharSequence description =
+                node.getContentDescription();
+
+        String nodeText =
+                text == null
+                        ? ""
+                        : text.toString()
+                        .toLowerCase();
+
+        String nodeDescription =
+                description == null
+                        ? ""
+                        : description.toString()
+                        .toLowerCase();
+
+        if (node.isClickable() &&
+                (nodeText.contains(wanted) ||
+                 nodeDescription.contains(wanted))) {
+
+            return node.performAction(
+                    AccessibilityNodeInfo.ACTION_CLICK
+            );
+        }
+
+        for (int i = 0;
+             i < node.getChildCount();
+             i++) {
+
+            AccessibilityNodeInfo child =
+                    node.getChild(i);
+
+            if (child == null) {
+                continue;
+            }
+
+            boolean result =
+                    clickRecursive(
+                            child,
+                            wanted
+                    );
+
+            child.recycle();
+
+            if (result) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public boolean goBack() {
+
+        return performGlobalAction(
+                GLOBAL_ACTION_BACK
+        );
+    }
+
+    public boolean goHome() {
+
+        return performGlobalAction(
+                GLOBAL_ACTION_HOME
+        );
+    }
+
+    public boolean openRecents() {
+
+        return performGlobalAction(
+                GLOBAL_ACTION_RECENTS
+        );
+    }
+
+    public boolean scrollDown() {
+
+        AccessibilityNodeInfo root =
+                getRootInActiveWindow();
+
+        if (root == null) {
+            return false;
+        }
+
+        boolean result =
+                root.performAction(
+                        AccessibilityNodeInfo
+                                .ACTION_SCROLL_FORWARD
+                );
+
+        root.recycle();
+
+        return result;
+    }
+
+    public boolean scrollUp() {
+
+        AccessibilityNodeInfo root =
+                getRootInActiveWindow();
+
+        if (root == null) {
+            return false;
+        }
+
+        boolean result =
+                root.performAction(
+                        AccessibilityNodeInfo
+                                .ACTION_SCROLL_BACKWARD
+                );
+
+        root.recycle();
+
+        return result;
     }
 }
