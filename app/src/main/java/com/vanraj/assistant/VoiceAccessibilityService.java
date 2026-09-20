@@ -3,8 +3,8 @@ package com.vanraj.assistant;
 import android.accessibilityservice.AccessibilityService;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
 
 public class VoiceAccessibilityService extends AccessibilityService {
 
@@ -15,7 +15,9 @@ public class VoiceAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+
         instance = this;
+
         Log.d(TAG, "Accessibility Service Connected");
     }
 
@@ -29,7 +31,7 @@ public class VoiceAccessibilityService extends AccessibilityService {
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        // UI events are received here.
+        // Accessibility events yahan receive hote hain.
     }
 
     @Override
@@ -40,15 +42,20 @@ public class VoiceAccessibilityService extends AccessibilityService {
     @Override
     public void onDestroy() {
         instance = null;
+        Log.d(TAG, "Accessibility Service Destroyed");
         super.onDestroy();
     }
 
     public boolean typeText(String text) {
 
+        if (text == null) {
+            text = "";
+        }
+
         AccessibilityNodeInfo root = getRootInActiveWindow();
 
         if (root == null) {
-            Log.e(TAG, "Active window not available");
+            Log.e(TAG, "Active window nahi mila");
             return false;
         }
 
@@ -57,28 +64,30 @@ public class VoiceAccessibilityService extends AccessibilityService {
         );
 
         if (input == null || !input.isEditable()) {
+
             if (input != null) {
                 input.recycle();
             }
 
-            input = findEditable(root);
+            input = findEditableField(root);
         }
 
         if (input == null) {
-            Log.e(TAG, "No editable input field found");
+            Log.e(TAG, "Editable text field nahi mila");
             root.recycle();
             return false;
         }
 
-        Bundle args = new Bundle();
-        args.putCharSequence(
+        Bundle arguments = new Bundle();
+
+        arguments.putCharSequence(
                 AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
                 text
         );
 
         boolean result = input.performAction(
                 AccessibilityNodeInfo.ACTION_SET_TEXT,
-                args
+                arguments
         );
 
         Log.d(TAG, "Typing result: " + result);
@@ -89,7 +98,7 @@ public class VoiceAccessibilityService extends AccessibilityService {
         return result;
     }
 
-    private AccessibilityNodeInfo findEditable(
+    private AccessibilityNodeInfo findEditableField(
             AccessibilityNodeInfo node) {
 
         if (node == null) {
@@ -104,11 +113,13 @@ public class VoiceAccessibilityService extends AccessibilityService {
 
             AccessibilityNodeInfo child = node.getChild(i);
 
-            AccessibilityNodeInfo result = findEditable(child);
-
-            if (child != null) {
-                child.recycle();
+            if (child == null) {
+                continue;
             }
+
+            AccessibilityNodeInfo result = findEditableField(child);
+
+            child.recycle();
 
             if (result != null) {
                 return result;
