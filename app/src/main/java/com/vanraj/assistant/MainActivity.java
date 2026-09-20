@@ -5,12 +5,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -18,81 +17,103 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-    private SpeechRecognizer speechRecognizer;
+    private SpeechRecognizer recognizer;
     private Intent speechIntent;
     private TextToSpeech tts;
-    private TextView statusText;
+    private TextView status;
+
+    private final Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(30, 30, 30, 30);
+        status = new TextView(this);
+        status.setTextSize(20);
+        status.setPadding(40, 60, 40, 40);
+        status.setText("🤖 VANRAJ ASSISTANT\n\nStarting...");
+        setContentView(status);
 
-        TextView title = new TextView(this);
-        title.setText("VANRAJ VOICE ASSISTANT");
-        title.setTextSize(22);
-
-        statusText = new TextView(this);
-        statusText.setText(
-                "Ready bhai.\n\n" +
-                "Accessibility Service ON rakho.\n" +
-                "Neeche Listen dabao aur command bolo."
-        );
-        statusText.setTextSize(17);
-        statusText.setPadding(0, 30, 0, 30);
-
-        Button listenButton = new Button(this);
-        listenButton.setText("🎤 LISTEN");
-
-        layout.addView(title);
-        layout.addView(statusText);
-        layout.addView(listenButton);
-
-        setContentView(layout);
-
-        // Text to Speech
-        tts = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                tts.setLanguage(Locale.ENGLISH);
+        tts = new TextToSpeech(this, result -> {
+            if (result == TextToSpeech.SUCCESS) {
+                tts.setLanguage(Locale.US);
             }
         });
 
-        // Microphone permission
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
+        if (android.os.Build.VERSION.SDK_INT >= 23 &&
+                checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                        != PackageManager.PERMISSION_GRANTED) {
 
-            if (checkSelfPermission(
-                    Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    101
+            );
 
-                requestPermissions(
-                        new String[]{
-                                Manifest.permission.RECORD_AUDIO
-                        },
-                        100
+        } else {
+            startAssistant();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            String[] permissions,
+            int[] results) {
+
+        super.onRequestPermissionsResult(
+                requestCode,
+                permissions,
+                results
+        );
+
+        if (requestCode == 101) {
+
+            if (results.length > 0 &&
+                    results[0] == PackageManager.PERMISSION_GRANTED) {
+
+                startAssistant();
+
+            } else {
+
+                status.setText(
+                        "❌ Microphone permission nahi mila.\n\n" +
+                        "Settings → Apps → Voice Assistant → Permissions → Microphone ON karo."
                 );
             }
         }
+    }
 
-        setupSpeech();
+    private void startAssistant() {
 
-        listenButton.setOnClickListener(v -> startListening());
+        status.setText(
+                "🤖 VANRAJ ASSISTANT\n\n" +
+                "Starting microphone..."
+        );
+
+        handler.postDelayed(() -> {
+
+            setupSpeech();
+
+            handler.postDelayed(() -> {
+                listen();
+            }, 1000);
+
+        }, 1000);
     }
 
     private void setupSpeech() {
 
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
 
-            statusText.setText(
-                    "Speech recognition available nahi hai."
+            status.setText(
+                    "❌ Speech Recognition available nahi hai.\n\n" +
+                    "Google app / Speech Services by Google install ya enable karo."
             );
 
             return;
         }
 
-        speechRecognizer =
+        recognizer =
                 SpeechRecognizer.createSpeechRecognizer(this);
 
         speechIntent =
@@ -107,7 +128,7 @@ public class MainActivity extends Activity {
 
         speechIntent.putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE,
-                "en-IN"
+                "hi-IN"
         );
 
         speechIntent.putExtra(
@@ -120,80 +141,88 @@ public class MainActivity extends Activity {
                 3
         );
 
-        speechRecognizer.setRecognitionListener(
+        speechIntent.putExtra(
+                RecognizerIntent.EXTRA_PARTIAL_RESULTS,
+                false
+        );
+
+        recognizer.setRecognitionListener(
                 new RecognitionListener() {
 
                     @Override
-                    public void onReadyForSpeech(
-                            Bundle params) {
+                    public void onReadyForSpeech(Bundle params) {
 
-                        statusText.setText(
-                                "🎤 Sun raha hoon bhai..."
+                        status.setText(
+                                "🎤 SUN RAHA HOON BHAI...\n\n" +
+                                "Bolo 👂"
                         );
                     }
 
                     @Override
                     public void onBeginningOfSpeech() {
 
-                        statusText.setText(
+                        status.setText(
                                 "👂 Bolo bhai..."
                         );
                     }
 
                     @Override
-                    public void onRmsChanged(
-                            float rmsdB) {
+                    public void onRmsChanged(float rmsdB) {
                     }
 
                     @Override
-                    public void onBufferReceived(
-                            byte[] buffer) {
+                    public void onBufferReceived(byte[] buffer) {
                     }
 
                     @Override
                     public void onEndOfSpeech() {
 
-                        statusText.setText(
-                                "Processing..."
+                        status.setText(
+                                "⚙️ Command samajh raha hoon..."
                         );
                     }
 
                     @Override
-                    public void onError(
-                            int error) {
+                    public void onError(int error) {
 
-                        statusText.setText(
-                                "Speech error: " + error
+                        status.setText(
+                                "⚠️ Speech error " +
+                                error +
+                                "\n\nDobara sun raha hoon..."
                         );
+
+                        restartListening();
                     }
 
                     @Override
-                    public void onResults(
-                            Bundle results) {
+                    public void onResults(Bundle results) {
 
                         ArrayList<String> list =
                                 results.getStringArrayList(
-                                        SpeechRecognizer
-                                                .RESULTS_RECOGNITION
+                                        SpeechRecognizer.RESULTS_RECOGNITION
                                 );
 
                         if (list == null ||
                                 list.isEmpty()) {
 
-                            statusText.setText(
-                                    "Kuch suna nahi bhai."
-                            );
-
+                            restartListening();
                             return;
                         }
 
-                        String command = list.get(0);
+                        String command =
+                                list.get(0);
 
-                        statusText.setText(
-                                "You: " + command
+                        status.setText(
+                                "👤 You:\n" +
+                                command +
+                                "\n\n⚙️ Processing..."
                         );
 
                         executeCommand(command);
+
+                        handler.postDelayed(() -> {
+                            listen();
+                        }, 1500);
                     }
 
                     @Override
@@ -210,42 +239,66 @@ public class MainActivity extends Activity {
         );
     }
 
-    private void startListening() {
+    private void listen() {
 
-        if (speechRecognizer == null) {
-
+        if (recognizer == null) {
             setupSpeech();
+        }
 
-            if (speechRecognizer == null) {
-                return;
-            }
+        if (recognizer == null) {
+            return;
         }
 
         try {
 
-            speechRecognizer.startListening(
+            recognizer.cancel();
+
+            status.setText(
+                    "🎤 SUN RAHA HOON BHAI...\n\n" +
+                    "Bolo..."
+            );
+
+            recognizer.startListening(
                     speechIntent
             );
 
         } catch (Exception e) {
 
-            statusText.setText(
-                    "Listening error: " +
-                    e.getMessage()
+            status.setText(
+                    "⚠️ Mic start nahi hua.\n\n" +
+                    "Retry kar raha hoon..."
             );
+
+            restartListening();
         }
+    }
+
+    private void restartListening() {
+
+        handler.postDelayed(() -> {
+
+            if (!isFinishing()) {
+                listen();
+            }
+
+        }, 2000);
     }
 
     private void executeCommand(String command) {
 
-        if (command == null) {
+        if (command == null ||
+                command.trim().isEmpty()) {
+
             return;
         }
 
         String lower =
                 command.toLowerCase(Locale.ROOT).trim();
 
-        // HOME
+        /*
+         * HOME
+         */
+
         if (lower.equals("home") ||
                 lower.contains("home jao") ||
                 lower.contains("home kholo")) {
@@ -254,93 +307,10 @@ public class MainActivity extends Activity {
                     VoiceAccessibilityService.getInstance();
 
             if (service != null) {
+
                 service.goHome();
+
                 speak("Home khol diya bhai");
-            } else {
-                speak("Accessibility service ON nahi hai");
-            }
-
-            return;
-        }
-
-        // BACK
-        if (lower.equals("back") ||
-                lower.contains("back karo") ||
-                lower.contains("peeche jao")) {
-
-            VoiceAccessibilityService service =
-                    VoiceAccessibilityService.getInstance();
-
-            if (service != null) {
-                service.goBack();
-                speak("Back kar diya bhai");
-            } else {
-                speak("Accessibility service ON nahi hai");
-            }
-
-            return;
-        }
-
-        // RECENTS
-        if (lower.contains("recent apps") ||
-                lower.contains("recent kholo")) {
-
-            VoiceAccessibilityService service =
-                    VoiceAccessibilityService.getInstance();
-
-            if (service != null) {
-                service.openRecents();
-                speak("Recent apps khol diya bhai");
-            }
-
-            return;
-        }
-
-        // SCROLL DOWN
-        if (lower.contains("scroll down") ||
-                lower.contains("neeche scroll")) {
-
-            VoiceAccessibilityService service =
-                    VoiceAccessibilityService.getInstance();
-
-            if (service != null) {
-                service.scrollDown();
-                speak("Neeche scroll kar diya");
-            }
-
-            return;
-        }
-
-        // SCROLL UP
-        if (lower.contains("scroll up") ||
-                lower.contains("upar scroll")) {
-
-            VoiceAccessibilityService service =
-                    VoiceAccessibilityService.getInstance();
-
-            if (service != null) {
-                service.scrollUp();
-                speak("Upar scroll kar diya");
-            }
-
-            return;
-        }
-
-        // TYPE
-        if (lower.startsWith("type ") ||
-                lower.startsWith("likho ") ||
-                lower.contains("message likho")) {
-
-            String text = extractText(command);
-
-            VoiceAccessibilityService service =
-                    VoiceAccessibilityService.getInstance();
-
-            if (service != null) {
-
-                service.typeText(text);
-
-                speak("Text type kar diya bhai");
 
             } else {
 
@@ -352,18 +322,140 @@ public class MainActivity extends Activity {
             return;
         }
 
-        // OPEN APP
-        String appName =
-                extractAppName(command);
+        /*
+         * BACK
+         */
 
-        if (!appName.isEmpty()) {
+        if (lower.equals("back") ||
+                lower.contains("back karo") ||
+                lower.contains("peeche jao")) {
 
-            openApp(appName);
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.goBack();
+
+                speak("Back kar diya bhai");
+
+            } else {
+
+                speak(
+                        "Accessibility service ON nahi hai"
+                );
+            }
 
             return;
         }
 
-        // SEARCH
+        /*
+         * RECENTS
+         */
+
+        if (lower.contains("recent")) {
+
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.openRecents();
+
+                speak(
+                        "Recent apps khol diya bhai"
+                );
+            }
+
+            return;
+        }
+
+        /*
+         * SCROLL
+         */
+
+        if (lower.contains("scroll down") ||
+                lower.contains("neeche scroll")) {
+
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.scrollDown();
+
+                speak(
+                        "Neeche scroll kar diya"
+                );
+            }
+
+            return;
+        }
+
+        if (lower.contains("scroll up") ||
+                lower.contains("upar scroll")) {
+
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                service.scrollUp();
+
+                speak(
+                        "Upar scroll kar diya"
+                );
+            }
+
+            return;
+        }
+
+        /*
+         * TYPE
+         */
+
+        if (lower.startsWith("type ") ||
+                lower.startsWith("likho ") ||
+                lower.contains("message likho")) {
+
+            String text =
+                    extractText(command);
+
+            VoiceAccessibilityService service =
+                    VoiceAccessibilityService.getInstance();
+
+            if (service != null) {
+
+                boolean ok =
+                        service.typeText(text);
+
+                if (ok) {
+
+                    speak(
+                            "Text type kar diya bhai"
+                    );
+
+                } else {
+
+                    speak(
+                            "Text field nahi mili bhai"
+                    );
+                }
+
+            } else {
+
+                speak(
+                        "Accessibility service ON nahi hai"
+                );
+            }
+
+            return;
+        }
+
+        /*
+         * SEARCH
+         */
+
         if (lower.startsWith("search ")) {
 
             String query =
@@ -374,8 +466,22 @@ public class MainActivity extends Activity {
             return;
         }
 
+        /*
+         * OPEN APP
+         */
+
+        String app =
+                extractAppName(command);
+
+        if (!app.isEmpty()) {
+
+            openApp(app);
+
+            return;
+        }
+
         speak(
-                "Command abhi samajh nahi aayi bhai"
+                "Command samajh nahi aayi bhai"
         );
     }
 
@@ -400,7 +506,8 @@ public class MainActivity extends Activity {
         if (index >= 0) {
 
             return command.substring(
-                    index + "message likho".length()
+                    index +
+                    "message likho".length()
             ).trim();
         }
 
@@ -474,36 +581,35 @@ public class MainActivity extends Activity {
             packageName = "com.spotify.music";
 
         else if (appName.equals("maps"))
-            packageName =
-                    "com.google.android.apps.maps";
+            packageName = "com.google.android.apps.maps";
 
         else if (appName.equals("play store"))
             packageName = "com.android.vending";
 
         else if (appName.equals("outlook"))
-            packageName =
-                    "com.microsoft.office.outlook";
+            packageName = "com.microsoft.office.outlook";
 
         else if (appName.equals("snapchat"))
-            packageName =
-                    "com.snapchat.android";
+            packageName = "com.snapchat.android";
 
         if (packageName == null) {
 
-            speak("App ka naam samajh nahi aaya");
+            speak(
+                    "App ka naam samajh nahi aaya"
+            );
 
             return;
         }
 
         try {
 
-            Intent launchIntent =
+            Intent intent =
                     getPackageManager()
                             .getLaunchIntentForPackage(
                                     packageName
                             );
 
-            if (launchIntent == null) {
+            if (intent == null) {
 
                 speak(
                         appName +
@@ -513,11 +619,11 @@ public class MainActivity extends Activity {
                 return;
             }
 
-            launchIntent.addFlags(
+            intent.addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK
             );
 
-            startActivity(launchIntent);
+            startActivity(intent);
 
             speak(
                     appName +
@@ -549,11 +655,15 @@ public class MainActivity extends Activity {
 
             startActivity(intent);
 
-            speak("Search khol diya bhai");
+            speak(
+                    "Search khol diya bhai"
+            );
 
         } catch (Exception e) {
 
-            speak("Search open nahi hua");
+            speak(
+                    "Search open nahi hua"
+            );
         }
     }
 
@@ -574,10 +684,12 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
 
-        if (speechRecognizer != null) {
+        handler.removeCallbacksAndMessages(null);
 
-            speechRecognizer.destroy();
-            speechRecognizer = null;
+        if (recognizer != null) {
+
+            recognizer.destroy();
+            recognizer = null;
         }
 
         if (tts != null) {
