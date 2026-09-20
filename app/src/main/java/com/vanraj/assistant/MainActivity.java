@@ -1,8 +1,3 @@
-cd ~/assistant/accessibility
-
-cat > app/src/main/java/com/vanraj/assistant/MainActivity.java <<'JAVA'
-package com.vanraj.assistant;
-
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
